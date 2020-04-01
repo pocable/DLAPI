@@ -1,0 +1,5 @@
+flask
+myjdapi
+requests
+gunicorn
+Flask-APScheduler
