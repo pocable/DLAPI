@@ -33,12 +33,12 @@ Adds the torrent magnet to the monitored list, when the magnet link is done down
 </br>
 <code>
 {
+    
     'magnet_url': A magnet url you want to download OR 'id': Real debrid ID to be added.
 
     'title': Optional title. Makes the GET return id, path and title rather than just ID.
 
     'path': Download path on server.
-
 }
 </code>
 
