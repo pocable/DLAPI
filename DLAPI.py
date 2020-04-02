@@ -34,6 +34,9 @@ REAL_DB_KEY = os.environ['RD_KEY']
 # I do not want to poll their servers too much.
 rate_delay = 150
 
+# Save Interval
+save_interval = 5
+
 # Should not be changed
 REAL_DB_SERVER = "https://api.real-debrid.com/rest/1.0/"
 header = {'Authorization': 'Bearer ' + REAL_DB_KEY }
@@ -49,6 +52,7 @@ watched_content = {}
 app = flask.Flask(__name__)
 app.config["DEBUG"] = False
 device = None
+first_load = False
 
 # Threading Configuration
 rd_thread = None
@@ -62,6 +66,13 @@ class Config(object):
             'args': (),
             'trigger': 'interval',
             'seconds': rate_delay
+        },
+        {
+            'id': 'SaveFunc',
+            'func': __name__ + ':save_state',
+            'args': (),
+            'trigger': 'interval',
+            'seconds': save_interval
         }
     ]
 
@@ -154,7 +165,7 @@ def download_id(id):
 
     # Try and download the movie, if successful then delete ID. Otherwise, don't delete but severe log.
     try:
-        jdownload(device, download_urls, watched_content[id])
+        jdownload(device, download_urls, watched_content[id]['path'])
         del watched_content[id]
     except Exception as e:
         app.logger.error("Issue in JDownloader: " + str(e))
@@ -199,6 +210,16 @@ def rd_listener():
                 del watched_content[file['id']]
                 continue
 
+"""
+Save the current program state.
+"""
+def save_state():
+    if first_load:
+        f = open("state.txt", 'w')
+        f.write(json.dumps(watched_content))
+        f.close()
+
+
 # Flask Routing
 
 # Endpoint to add content to be watched
@@ -206,8 +227,9 @@ def rd_listener():
 def add_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
-            content = request.get_json(silent=True, force=True)
             id = None
+            title = None
+            content = request.get_json(silent=True, force=True)
             if 'magnet_url' in content:
                 magnet_url = content['magnet_url']
             elif 'id' in content:
@@ -222,13 +244,20 @@ def add_content():
                 content = {'Error' : 'Path is missing from post.'}
                 return content, 400
 
+            if 'title' in content:
+                title = content['title']
+
             # Send magnet link to be downloaded
             if id == None:
                 id = send_to_rd(magnet_url)
             if id[0] == False:
                 return {'Error': id[1]}, 417
 
-            watched_content[id[1]] = path
+            package = {'path':path}
+            if title != None:
+                package['title'] = title
+
+            watched_content[id[1]] = package
             return {}, 200
 
     return {'Error' : 'Authentication Failed'}, 401
@@ -287,10 +316,11 @@ device = setup_jdownload()
 try:
     f = open("state.txt", 'r')
     watched_content = json.loads(f.read())
+    f.close()
 except IOError:
     pass
-finally:
-    f.close()
+
+first_load = True
 
 # Setup scheduler for checking RD
 app.config.from_object(Config())
