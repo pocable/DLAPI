@@ -14,6 +14,9 @@ import threading
 import sys
 import os
 
+# Shutdown Safety
+import atexit
+
 ###########################
 #   Configuration Items   #
 ###########################
@@ -148,7 +151,13 @@ def download_id(id):
             app.logger.error("Failed to get torrent info. Status code: " + str(req.status_code))
             continue
         download_urls.append(res['download'])
-    jdownload(device, download_urls, watched_content[id])
+
+    # Try and download the movie, if successful then delete ID. Otherwise, don't delete but severe log.
+    try:
+        jdownload(device, download_urls, watched_content[id])
+        del watched_content[id]
+    except Exception as e:
+        app.logger.error("Issue in JDownloader: " + str(e))
 
 """
 Poll RD every rate_delay seconds in order to check for updates on torrent statuses
@@ -173,7 +182,6 @@ def rd_listener():
             # If its downloaded and ready, process and remove for next cycle. Otherwise if error log and remove.
             if file['status'] == 'downloaded':
                 download_id(file['id'])
-                del watched_content[file['id']]
             elif file['status'] == 'magnet_error':
                 app.logger.error("Magnet error on torrent with id: %s, path: %s" % (file['id'], watched_content[file['id']]))
                 del watched_content[file['id']]
@@ -195,12 +203,15 @@ def rd_listener():
 
 # Endpoint to add content to be watched
 @app.route('/api/v1/content', methods=['POST'])
-def addContent():
+def add_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
             content = request.get_json(silent=True, force=True)
+            id = None
             if 'magnet_url' in content:
                 magnet_url = content['magnet_url']
+            elif 'id' in content:
+                id = (True, content['id'])
             else:
                 content = {'Error' : 'magnet_url is missing from post.'}
                 return content, 400
@@ -212,26 +223,74 @@ def addContent():
                 return content, 400
 
             # Send magnet link to be downloaded
-            id = send_to_rd(magnet_url)
+            if id == None:
+                id = send_to_rd(magnet_url)
             if id[0] == False:
                 return {'Error': id[1]}, 417
 
             watched_content[id[1]] = path
-            return content, 200
+            return {}, 200
+
+    return {'Error' : 'Authentication Failed'}, 401
+
+# Endpoint for deleting content from being watched
+@app.route('/api/v1/content', methods=['DELETE'])
+def remove_all_content():
+
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            content = request.get_json(silent=True, force=True)
+            if 'id' in content:
+                id = content['id']
+            else:
+                content = {'Error' : 'ID is missing from post.'}
+                return content, 400
+
+            # If we have the id, delete it.
+            if id in watched_content.keys():
+                del watched_content[id]
+                return {}, 200
+            else:
+                return {'Error' : 'id is not in the watched list.'}, 410
 
     return {'Error' : 'Authentication Failed'}, 401
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['GET'])
-def add_content():
+def get_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
             return jsonify(watched_content)
 
     return {'Error' : 'Authentication Failed'}, 401
 
+# Endpoint to get all watched content on RD
+@app.route('/api/v1/content/all', methods=['DELETE'])
+def delete_all_content():
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            watched_content = {}
+            return {}, 200
+
+    return {'Error' : 'Authentication Failed'}, 401
+
+# Called when the appliation is shutdown. Saves the watched content list for resuming later.
+def on_shutdown():
+    f = open("state.txt", 'w')
+    f.write(json.dumps(watched_content))
+    f.close()
+
 # Gunicorn requires this stuff ot be outside the main
 device = setup_jdownload()
+
+# Check if there is a state needing to be loaded.
+try:
+    f = open("state.txt", 'r')
+    watched_content = json.loads(f.read())
+except IOError:
+    pass
+finally:
+    f.close()
 
 # Setup scheduler for checking RD
 app.config.from_object(Config())
@@ -240,4 +299,5 @@ scheduler.init_app(app)
 scheduler.start()
 
 if __name__ == "__main__":
+    atexit.register(on_shutdown)
     app.run(host='0.0.0.0', port=4248)
