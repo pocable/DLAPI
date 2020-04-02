@@ -27,47 +27,35 @@ All calls require an Authorization header </br>
 {'Authorization': API_KEY here}
 ```
 
-<details>
-<summary>POST - /api/v1/content</summary>
+### POST - /api/v1/content
 Adds the torrent magnet to the monitored list, when the magnet link is done downloading auto send to JDownloader to be downloaded to the provided path.
-</br>
-<code>
+
+```
 {
-    
+
     'magnet_url': A magnet url you want to download OR 'id': Real debrid ID to be added.
 
     'title': Optional title. Makes the GET return id, path and title rather than just ID.
 
     'path': Download path on server.
 }
-</code>
+```
 
-</details>
-
-<details>
-<summary>DELETE - /api/v1/content</summary>
+### DELETE - /api/v1/content
 Removes an ID to the monitored list.
-</br>
 
-<code>
+```
 {
     'id': Real Debrid ID, can be obtained from GET - /api/v1/content/all
 }
-</code>
+```
 
-</details>
-
-<details>
-<summary>GET - /api/v1/content/all</summary>
+### GET - /api/v1/content/all
 Get a list of all monitored Real Debrid ID's and their download path.
 
-</details>
-
-<details>
-<summary>DELETE - /api/v1/content/all</summary>
+### DELETE - /api/v1/content/all
 Delete all ID's being watched by the system.
 
-</details>
 
 
 ## HTTP Codes
