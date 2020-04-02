@@ -34,48 +34,46 @@ Adds the torrent magnet to the monitored list, when the magnet link is done down
 <code>
 {
     'magnet_url': A magnet url you want to download OR 'id': Real debrid ID to be added.
+
     'title': Optional title. Makes the GET return id, path and title rather than just ID.
+
     'path': Download path on server.
+
 }
 </code>
-| HTTP Codes | Description                                                |
-|------------|------------------------------------------------------------|
-| 400        | Error in the input. See the content message for which one. |
-| 200        | Success                                                    |
-| 401        | Authentication failed. Check your DLAPI key.               |
+
 </details>
 
 <details>
 <summary>DELETE - /api/v1/content</summary>
 Removes an ID to the monitored list.
 </br>
+
 <code>
 {
     'id': Real Debrid ID, can be obtained from GET - /api/v1/content/all
 }
 </code>
+
+</details>
+
+<details>
+<summary>GET - /api/v1/content/all</summary>
+Get a list of all monitored Real Debrid ID's and their download path.
+
+</details>
+
+<details>
+<summary>DELETE - /api/v1/content/all</summary>
+Delete all ID's being watched by the system.
+
+</details>
+
+
+## HTTP Codes
 | HTTP Codes | Description                                                |
 |------------|------------------------------------------------------------|
 | 400        | Error in the input. See the content message for which one. |
 | 200        | Success                                                    |
 | 401        | Authentication failed. Check your DLAPI key.               |
 | 410        | The ID provided does not exist/is not watched.             |
-</details>
-
-<details>
-<summary>GET - /api/v1/content/all</summary>
-Get a list of all monitored Real Debrid ID's and their download path.
-| HTTP Codes | Description                                                |
-|------------|------------------------------------------------------------|
-| 200        | Success                                                    |
-| 401        | Authentication failed. Check your DLAPI key.               |
-</details>
-
-<details>
-<summary>DELETE - /api/v1/content/all</summary>
-Delete all ID's being watched by the system.
-| HTTP Codes | Description                                                |
-|------------|------------------------------------------------------------|
-| 200        | Success                                                    |
-| 401        | Authentication failed. Check your DLAPI key.               |
-</details>
