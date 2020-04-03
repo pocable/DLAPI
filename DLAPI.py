@@ -35,7 +35,7 @@ REAL_DB_KEY = os.environ['RD_KEY']
 rate_delay = 150
 
 # Save Interval
-save_interval = 5
+save_interval = 60
 
 # Should not be changed
 REAL_DB_SERVER = "https://api.real-debrid.com/rest/1.0/"
