@@ -56,6 +56,7 @@ app = flask.Flask(__name__)
 app.config["DEBUG"] = False
 device = None
 first_load = False
+jd = None
 
 # Threading Configuration
 rd_thread = None
@@ -100,6 +101,7 @@ urls: The list of urls to download
 path: The path to download to.
 """
 def jdownload(device, urls, path):
+    jd.reconnect()
     device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
     app.logger.info("Sent movie to jdownloader server with path: %s" % path)
 
