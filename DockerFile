@@ -9,6 +9,7 @@ ADD start_webserver.sh /
 
 # Run requirements installation
 RUN pip install -r requirements.txt
+RUN chmod +x start_webserver.sh
 
 # Run the program
 ENTRYPOINT ["./start_webserver.sh"]
