@@ -174,6 +174,12 @@ def download_id(id):
 Poll RD every rate_delay seconds in order to check for updates on torrent statuses
 """
 def rd_listener():
+    
+    # If there is nothing to watch, why poll RD?
+    if len(watched_content) == 0:
+        return
+
+    # Try to get RD torrents list
     try:
         req = requests.get(REAL_DB_SERVER + "torrents", headers=header)
     except:
@@ -189,6 +195,8 @@ def rd_listener():
 
     # For each of the different torrent files we obtained
     for file in res:
+
+        # If the file is being watched, check status
         if file['id'] in watched_content.keys():
             # If its downloaded and ready, process and remove for next cycle. Otherwise if error log and remove.
             if file['status'] == 'downloaded':
