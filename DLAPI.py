@@ -110,6 +110,7 @@ Setup jdownloader using the given username and password
 returns: The device to send downloads to.
 """
 def setup_jdownload():
+    global jd
     jd = myjdapi.Myjdapi()
     jd.set_app_key("JDRD")
     jd.connect(JDOWNLOADER_USER, JDOWNLOADER_PASS)
