@@ -52,6 +52,9 @@ Removes an ID to the monitored list.
 }
 ```
 
+### GET - /api/v1/content/check
+Immedietly check RD to see if content has finished downloading.
+
 ### GET - /api/v1/content/all
 Get a list of all monitored Real Debrid ID's and their download path.
 

@@ -110,13 +110,12 @@ Setup jdownloader using the given username and password
 returns: The device to send downloads to.
 """
 def setup_jdownload():
-    global jd
     jd = myjdapi.Myjdapi()
     jd.set_app_key("JDRD")
     jd.connect(JDOWNLOADER_USER, JDOWNLOADER_PASS)
     jd.update_devices()
     device = jd.get_device(JDOWNLOADER_DEVICE)
-    return device
+    return jd, device
 
 """
 Get all the download links for a given real debrid url.
@@ -317,6 +316,15 @@ def delete_all_content():
 
     return {'Error' : 'Authentication Failed'}, 401
 
+# Endpoint to immedietly check for downloads (calls rd_listener)
+@app.route('/api/v1/content/check', methods=['GET'])
+def trigger_check():
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            rd_listener()
+
+    return {'Error' : 'Authentication Failed'}, 401
+
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
     f = open(config_folder + "state.txt", 'w')
@@ -324,7 +332,7 @@ def on_shutdown():
     f.close()
 
 # Gunicorn requires this stuff ot be outside the main
-device = setup_jdownload()
+jd, device = setup_jdownload()
 
 # Check if there is a state needing to be loaded.
 try:
