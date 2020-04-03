@@ -43,6 +43,9 @@ header = {'Authorization': 'Bearer ' + REAL_DB_KEY }
 
 API_KEY = os.environ['API_KEY']
 
+# Config Folder
+config_folder = "./dlconfig/"
+
 ###########################
 # End Configuration Items #
 ###########################
@@ -223,7 +226,7 @@ Save the current program state.
 """
 def save_state():
     if first_load:
-        f = open("state.txt", 'w')
+        f = open(config_folder + "state.txt", 'w')
         f.write(json.dumps(watched_content))
         f.close()
 
@@ -313,7 +316,7 @@ def delete_all_content():
 
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
-    f = open("state.txt", 'w')
+    f = open(config_folder + "state.txt", 'w')
     f.write(json.dumps(watched_content))
     f.close()
 
@@ -322,7 +325,7 @@ device = setup_jdownload()
 
 # Check if there is a state needing to be loaded.
 try:
-    f = open("state.txt", 'r')
+    f = open(config_folder + "state.txt", 'r')
     watched_content = json.loads(f.read())
     f.close()
 except IOError:
