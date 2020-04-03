@@ -20,6 +20,8 @@ JD_DEVICE= JDownloader Device
 RD_KEY= Real Debrid API Key
 API_KEY= Custom API Key
 ```
+A folder at /dlconfig/ will be created to store the file in the run directory. 
+This is so docker containers can keep config files saved if they point this using PATH.
 
 ## API Calls
 All calls require an Authorization header </br>
