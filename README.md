@@ -27,19 +27,41 @@ All calls require an Authorization header </br>
 {'Authorization': API_KEY here}
 ```
 
-<details>
-<summary>POST - /api/v1/content</summary>
-Adds the ID to the monitored list, when the ID is done downloading auto send to JDownloader to be downloaded to the provided path.
-</br>
-<code>
-{
-    'magnet_url': A magnet url you want to download
-    'path': Download path on server
-}
-</code>
-</details>
+### POST - /api/v1/content
+Adds the torrent magnet to the monitored list, when the magnet link is done downloading auto send to JDownloader to be downloaded to the provided path.
 
-<details>
-<summary>GET - /api/v1/content/all</summary>
+```
+{
+
+    'magnet_url': A magnet url you want to download OR 'id': Real debrid ID to be added.
+
+    'title': Optional title. Makes the GET return id, path and title rather than just ID.
+
+    'path': Download path on server.
+}
+```
+
+### DELETE - /api/v1/content
+Removes an ID to the monitored list.
+
+```
+{
+    'id': Real Debrid ID, can be obtained from GET - /api/v1/content/all
+}
+```
+
+### GET - /api/v1/content/all
 Get a list of all monitored Real Debrid ID's and their download path.
-</details>
+
+### DELETE - /api/v1/content/all
+Delete all ID's being watched by the system.
+
+
+
+## HTTP Codes
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 400        | Error in the input. See the content message for which one. |
+| 200        | Success                                                    |
+| 401        | Authentication failed. Check your DLAPI key.               |
+| 410        | The ID provided does not exist/is not watched.             |
