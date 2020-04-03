@@ -322,6 +322,7 @@ def trigger_check():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
             rd_listener()
+            return {}, 200
 
     return {'Error' : 'Authentication Failed'}, 401
 
