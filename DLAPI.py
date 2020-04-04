@@ -92,9 +92,20 @@ device: The jdownload device
 urls: The list of urls to download
 path: The path to download to.
 """
-def jdownload(device, urls, path):
-    jd.reconnect()
-    device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+def jdownload(dev, urls, path):
+    global jd
+    global device
+
+    try:
+
+        # Try add links to the device
+        dev.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+    except:
+        
+        # Try again with a reconnected jdownload session
+        jd, device = setup_jdownload()
+        device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+
     app.logger.info("Sent movie to jdownloader server with path: %s" % path)
 
 """
