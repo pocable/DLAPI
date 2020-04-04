@@ -17,10 +17,6 @@ import os
 # Shutdown Safety
 import atexit
 
-###########################
-#   Configuration Items   #
-###########################
-
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -45,10 +41,6 @@ API_KEY = os.environ['API_KEY']
 
 # Config Folder
 config_folder = "./dlconfig/"
-
-###########################
-# End Configuration Items #
-###########################
 
 # Internal global items and flask configuration
 watched_content = {}
@@ -328,9 +320,7 @@ def trigger_check():
 
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
-    f = open(config_folder + "state.txt", 'w')
-    f.write(json.dumps(watched_content))
-    f.close()
+    save_state()
 
 # Gunicorn requires this stuff ot be outside the main
 jd, device = setup_jdownload()
