@@ -97,7 +97,7 @@ def jdownload(dev, urls, path):
     global device
 
     try:
-
+        
         # Try add links to the device
         dev.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
     except:
