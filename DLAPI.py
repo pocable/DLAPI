@@ -17,10 +17,6 @@ import os
 # Shutdown Safety
 import atexit
 
-###########################
-#   Configuration Items   #
-###########################
-
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -45,10 +41,6 @@ API_KEY = os.environ['API_KEY']
 
 # Config Folder
 config_folder = "./dlconfig/"
-
-###########################
-# End Configuration Items #
-###########################
 
 # Internal global items and flask configuration
 watched_content = {}
@@ -100,9 +92,20 @@ device: The jdownload device
 urls: The list of urls to download
 path: The path to download to.
 """
-def jdownload(device, urls, path):
-    jd.reconnect()
-    device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+def jdownload(dev, urls, path):
+    global jd
+    global device
+
+    try:
+        
+        # Try add links to the device
+        dev.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+    except:
+        
+        # Try again with a reconnected jdownload session
+        jd, device = setup_jdownload()
+        device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+
     app.logger.info("Sent movie to jdownloader server with path: %s" % path)
 
 """
@@ -115,7 +118,7 @@ def setup_jdownload():
     jd.connect(JDOWNLOADER_USER, JDOWNLOADER_PASS)
     jd.update_devices()
     device = jd.get_device(JDOWNLOADER_DEVICE)
-    return device
+    return jd, device
 
 """
 Get all the download links for a given real debrid url.
@@ -316,14 +319,22 @@ def delete_all_content():
 
     return {'Error' : 'Authentication Failed'}, 401
 
+# Endpoint to immedietly check for downloads (calls rd_listener)
+@app.route('/api/v1/content/check', methods=['GET'])
+def trigger_check():
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            rd_listener()
+            return {}, 200
+
+    return {'Error' : 'Authentication Failed'}, 401
+
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
-    f = open(config_folder + "state.txt", 'w')
-    f.write(json.dumps(watched_content))
-    f.close()
+    save_state()
 
 # Gunicorn requires this stuff ot be outside the main
-device = setup_jdownload()
+jd, device = setup_jdownload()
 
 # Check if there is a state needing to be loaded.
 try:
