@@ -8,6 +8,7 @@ import myjdapi
 import flask
 from flask import request, jsonify
 from flask_apscheduler import APScheduler
+from flask_cors import CORS, cross_origin
 
 # Threading and system imports
 import threading
@@ -45,6 +46,8 @@ config_folder = "./dlconfig/"
 # Internal global items and flask configuration
 watched_content = {}
 app = flask.Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 app.config["DEBUG"] = False
 device = None
 first_load = False
@@ -240,6 +243,7 @@ def save_state():
 
 # Endpoint to add content to be watched
 @app.route('/api/v1/content', methods=['POST'])
+@cross_origin()
 def add_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -280,6 +284,7 @@ def add_content():
 
 # Endpoint for deleting content from being watched
 @app.route('/api/v1/content', methods=['DELETE'])
+@cross_origin()
 def remove_all_content():
 
     if 'Authorization' in request.headers.keys():
@@ -302,6 +307,7 @@ def remove_all_content():
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['GET'])
+@cross_origin()
 def get_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -311,6 +317,7 @@ def get_content():
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['DELETE'])
+@cross_origin()
 def delete_all_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -321,6 +328,7 @@ def delete_all_content():
 
 # Endpoint to immedietly check for downloads (calls rd_listener)
 @app.route('/api/v1/content/check', methods=['GET'])
+@cross_origin()
 def trigger_check():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -353,5 +361,8 @@ scheduler.init_app(app)
 scheduler.start()
 
 if __name__ == "__main__":
+    main()
+
+def main():
     atexit.register(on_shutdown)
     app.run(host='0.0.0.0', port=4248)
