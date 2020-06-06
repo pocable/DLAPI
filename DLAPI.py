@@ -7,6 +7,7 @@ import myjdapi
 # Flask Imports
 import flask
 from flask import request, jsonify
+from flask_cors import CORS
 from flask_apscheduler import APScheduler
 
 # Threading and system imports
@@ -45,6 +46,7 @@ config_folder = "./dlconfig/"
 # Internal global items and flask configuration
 watched_content = {}
 app = flask.Flask(__name__)
+CORS(app)
 app.config["DEBUG"] = False
 device = None
 first_load = False
@@ -332,15 +334,6 @@ def trigger_check():
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
     save_state()
-
-# Inject CORS headers after every call.
-@app.after_request
-def after_request(response):
-  response.headers.add('Access-Control-Allow-Origin', '*')
-  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-  response.headers.add('Access-Control-Allow-Credentials', 'true')
-  return response
 
 # Gunicorn requires this stuff ot be outside the main
 jd, device = setup_jdownload()
