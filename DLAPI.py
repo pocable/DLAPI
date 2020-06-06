@@ -8,7 +8,6 @@ import myjdapi
 import flask
 from flask import request, jsonify
 from flask_apscheduler import APScheduler
-from flask_cors import CORS, cross_origin
 
 # Threading and system imports
 import threading
@@ -46,8 +45,6 @@ config_folder = "./dlconfig/"
 # Internal global items and flask configuration
 watched_content = {}
 app = flask.Flask(__name__)
-cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
 app.config["DEBUG"] = False
 device = None
 first_load = False
@@ -243,7 +240,6 @@ def save_state():
 
 # Endpoint to add content to be watched
 @app.route('/api/v1/content', methods=['POST'])
-@cross_origin(methods=['DELETE', 'POST'])
 def add_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -284,8 +280,7 @@ def add_content():
 
 # Endpoint for deleting content from being watched
 @app.route('/api/v1/content', methods=['DELETE'])
-@cross_origin(methods=['DELETE', 'POST'])
-def remove_all_content():
+def remove_content():
 
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -301,13 +296,12 @@ def remove_all_content():
                 del watched_content[id]
                 return {}, 200
             else:
-                return {'Error' : 'id is not in the watched list.'}, 410
+                return {'Error' : 'ID is not in the watched list.'}, 410
 
     return {'Error' : 'Authentication Failed'}, 401
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['GET'])
-@cross_origin()
 def get_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -317,7 +311,6 @@ def get_content():
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['DELETE'])
-@cross_origin()
 def delete_all_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -328,7 +321,6 @@ def delete_all_content():
 
 # Endpoint to immedietly check for downloads (calls rd_listener)
 @app.route('/api/v1/content/check', methods=['GET'])
-@cross_origin()
 def trigger_check():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -340,6 +332,15 @@ def trigger_check():
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
     save_state()
+
+# Inject CORS headers after every call.
+@app.after_request
+def after_request(response):
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+  response.headers.add('Access-Control-Allow-Credentials', 'true')
+  return response
 
 # Gunicorn requires this stuff ot be outside the main
 jd, device = setup_jdownload()

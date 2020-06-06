@@ -3,4 +3,3 @@ myjdapi
 requests
 gunicorn
 Flask-APScheduler
-flask-cors
