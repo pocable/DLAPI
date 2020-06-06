@@ -248,6 +248,10 @@ def add_content():
             id = None
             title = None
             content = request.get_json(silent=True, force=True)
+
+            if content == None:
+                return {'Error' : 'No JSON provided'}, 400
+
             if 'magnet_url' in content:
                 magnet_url = content['magnet_url']
             elif 'id' in content:
@@ -287,6 +291,8 @@ def remove_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
             content = request.get_json(silent=True, force=True)
+            if content == None:
+                return {'Error' : 'No JSON provided'}, 400
             if 'id' in content:
                 id = content['id']
             else:
