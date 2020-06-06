@@ -243,7 +243,7 @@ def save_state():
 
 # Endpoint to add content to be watched
 @app.route('/api/v1/content', methods=['POST'])
-@cross_origin()
+@cross_origin(methods=['DELETE', 'POST'])
 def add_content():
     if 'Authorization' in request.headers.keys():
         if request.headers['Authorization'] == API_KEY:
@@ -284,7 +284,7 @@ def add_content():
 
 # Endpoint for deleting content from being watched
 @app.route('/api/v1/content', methods=['DELETE'])
-@cross_origin()
+@cross_origin(methods=['DELETE', 'POST'])
 def remove_all_content():
 
     if 'Authorization' in request.headers.keys():
