@@ -256,6 +256,19 @@ def add_content():
                 magnet_url = content['magnet_url']
             elif 'id' in content:
                 id = (True, content['id'])
+            elif 'url' in content:
+
+                # Resolve the url to get the magnet link
+                o_url = content['url']
+                url = o_url
+                try:
+                    url = requests.get(url).url
+                except requests.exceptions.InvalidSchema as e:
+                    # This usually means the original URL was indeed a magnet. Passing it though.
+                    url = o_url
+
+                # Set magnet url for later.
+                magnet_url = url
             else:
                 content = {'Error' : 'magnet_url is missing from post.'}
                 return content, 400
