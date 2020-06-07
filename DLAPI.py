@@ -264,8 +264,9 @@ def add_content():
                 try:
                     url = requests.get(url).url
                 except requests.exceptions.InvalidSchema as e:
-                    # This usually means the original URL was indeed a magnet. Passing it though.
-                    url = o_url
+                    # Remove error intro
+                    url = str(e)[39:]
+                    url = url[:-1]
 
                 # Set magnet url for later.
                 magnet_url = url
@@ -329,6 +330,12 @@ def get_content():
             return jsonify(watched_content)
 
     return {'Error' : 'Authentication Failed'}, 401
+
+
+@app.route('/api/v1/jackett', methods=['GET'])
+def jackett_proxy(){
+
+}
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['DELETE'])
