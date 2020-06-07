@@ -331,12 +331,6 @@ def get_content():
 
     return {'Error' : 'Authentication Failed'}, 401
 
-
-@app.route('/api/v1/jackett', methods=['GET'])
-def jackett_proxy(){
-
-}
-
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['DELETE'])
 def delete_all_content():
