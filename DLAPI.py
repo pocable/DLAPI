@@ -32,8 +32,11 @@ REAL_DB_KEY = os.environ['RD_KEY']
 # CORS PROXY if enabled for connecting to jackett via webapp.
 ENABLE_CORS_PROXY = False
 if 'ENABLE_CORS_PROXY' in os.environ:
-    ENABLE_CORS_PROXY = os.environ['ENABLE_CORS_PROXY']
-print("CORS PROXY: " + ENABLE_CORS_PROXY)
+    try:
+        ENABLE_CORS_PROXY = os.environ['ENABLE_CORS_PROXY'].lower() == 'true'
+    except:
+        pass
+print("CORS PROXY: " + str(ENABLE_CORS_PROXY))
 
 # Rate at which RD is polled for downloads. Keep > 250
 # RD will not finish a torrent under 2.5 minutes and
