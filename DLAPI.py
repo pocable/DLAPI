@@ -18,6 +18,9 @@ import os
 # Shutdown Safety
 import atexit
 
+# URL fixing
+from urllib.parse import unquote_plus
+
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -25,6 +28,15 @@ JDOWNLOADER_DEVICE = os.environ['JD_DEVICE']
 
 # https://real-debrid.com/apitoken
 REAL_DB_KEY = os.environ['RD_KEY']
+
+# CORS PROXY if enabled for connecting to jackett via webapp.
+ENABLE_CORS_PROXY = False
+if 'ENABLE_CORS_PROXY' in os.environ:
+    try:
+        ENABLE_CORS_PROXY = os.environ['ENABLE_CORS_PROXY'].lower() == 'true'
+    except:
+        pass
+print("CORS PROXY: " + str(ENABLE_CORS_PROXY))
 
 # Rate at which RD is polled for downloads. Keep > 250
 # RD will not finish a torrent under 2.5 minutes and
@@ -351,6 +363,30 @@ def trigger_check():
 
     return {'Error' : 'Authentication Failed'}, 401
 
+# CORS proxy.
+@app.route('/api/v1/corsproxy', methods=['GET'])
+def CORS_proxy():
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            if not ENABLE_CORS_PROXY:
+                return {'Error': 'CORS proxy is not enabled.'}, 410
+            
+            # Get url to forward to
+            url = request.args.get('url')
+            if url == None:
+                return {'Error': 'URL was not provided'}, 400
+            
+            # Fix quotations and request a get to the link
+            base = unquote_plus(request.base_url)
+            link = unquote_plus(request.url)
+            req = requests.get(link.replace(base, '')[5:])
+
+            # Return the exact result.
+            return req.text, req.status_code
+
+    return {'Error' : 'Authentication Failed'}, 401
+    
+
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
     save_state()
@@ -363,7 +399,7 @@ try:
     f = open(config_folder + "state.txt", 'r')
     watched_content = json.loads(f.read())
     f.close()
-except IOError:
+except Exception:
     pass
 
 first_load = True
