@@ -113,12 +113,14 @@ def jdownload(dev, urls, path):
     try:
         
         # Try add links to the device
-        dev.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+        dev.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls),
+            'destinationFolder': path + "", "overwritePackagizerRules": True}])
     except:
         
         # Try again with a reconnected jdownload session
         jd, device = setup_jdownload()
-        device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
+        device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 
+            'destinationFolder': path + "", "overwritePackagizerRules": True}])
 
     app.logger.info("Sent movie to jdownloader server with path: %s" % path)
 
@@ -160,13 +162,16 @@ def send_to_rd(magnet):
     data = {'magnet': magnet}
     req = requests.post(REAL_DB_SERVER + "torrents/addMagnet", data=data, headers=header)
     if req.status_code != 201:
-        return (False, "Error in sending magnet link to RD. Code: %d, Text: %s" % (req.status_code, req.text))
+        return (False, "Error in sending magnet link to RD. Code: %d, Text: %s" 
+            % (req.status_code, req.text))
     else:
         res = json.loads(req.text)
         ident = res['id']
-        req = requests.post(REAL_DB_SERVER + "torrents/selectFiles/%s" % ident, data={'files': "all"}, headers=header)
+        req = requests.post(REAL_DB_SERVER + "torrents/selectFiles/%s" 
+            % ident, data={'files': "all"}, headers=header)
         if req.status_code != 204 and req.status_code != 202:
-            return (False, "Error in sending magnet link to RD. Code: %d, Text: %s" % (req.status_code, req.text))
+            return (False, "Error in sending magnet link to RD. Code: %d, Text: %s" 
+                % (req.status_code, req.text))
         else:
             return (True, ident)
 
@@ -220,23 +225,28 @@ def rd_listener():
 
         # If the file is being watched, check status
         if file['id'] in watched_content.keys():
-            # If its downloaded and ready, process and remove for next cycle. Otherwise if error log and remove.
+            # If its downloaded and ready, process and remove for next cycle. 
+            # Otherwise if error log and remove.
             if file['status'] == 'downloaded':
                 download_id(file['id'])
             elif file['status'] == 'magnet_error':
-                app.logger.error("Magnet error on torrent with id: %s, path: %s" % (file['id'], watched_content[file['id']]))
+                app.logger.error("Magnet error on torrent with id: %s, path: %s" 
+                    % (file['id'], watched_content[file['id']]))
                 del watched_content[file['id']]
                 continue
             elif file['status'] == 'virus':
-                app.logger.error("Virus detected on torrent with id: %s, path: %s" % (file['id'], watched_content[file['id']]))
+                app.logger.error("Virus detected on torrent with id: %s, path: %s" 
+                    % (file['id'], watched_content[file['id']]))
                 del watched_content[file['id']]
                 continue
             elif file['status'] == 'error':
-                app.logger.error("Generic error on torrent with id: %s, path: %s" % (file['id'], watched_content[file['id']]))
+                app.logger.error("Generic error on torrent with id: %s, path: %s" 
+                    % (file['id'], watched_content[file['id']]))
                 del watched_content[file['id']]
                 continue
             elif file['status'] == 'dead':
-                app.logger.error("Dead torrent with id: %s, path: %s" % (file['id'], watched_content[file['id']]))
+                app.logger.error("Dead torrent with id: %s, path: %s" 
+                    % (file['id'], watched_content[file['id']]))
                 del watched_content[file['id']]
                 continue
 
@@ -391,8 +401,21 @@ def CORS_proxy():
 def on_shutdown():
     save_state()
 
-# Gunicorn requires this stuff ot be outside the main
-jd, device = setup_jdownload()
+# Gunicorn requires this stuff to be outside the main
+
+# Check if the system is able to setup jdownloader. If not, retry in 15 seconds.
+# With unraid or docker containers that launch on boot, if DLAPI is first this will prevent a
+# crash.
+device = None
+while device == None:
+    try:
+        jd, device = setup_jdownload()
+        print("JDownloader setup succeeded.")
+    except myjdapi.myjdapi.MYJDException as e:
+        print("JDownloader had an issue setting up. Please check your JDownloader configuration or " 
+            + "device status. Error: " + str(e))
+        print("Retrying in 15 seconds...")
+        time.sleep(15)
 
 # Check if there is a state needing to be loaded.
 try:
