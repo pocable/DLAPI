@@ -10,13 +10,15 @@ from flask import request, jsonify
 from flask_cors import CORS
 from flask_apscheduler import APScheduler
 
-# Threading and system imports
-import threading
+# System imports
 import sys
 import os
 
 # Shutdown Safety
 import atexit
+
+# Logging
+import logging
 
 # URL fixing
 from urllib.parse import unquote_plus
@@ -36,7 +38,6 @@ if 'ENABLE_CORS_PROXY' in os.environ:
         ENABLE_CORS_PROXY = os.environ['ENABLE_CORS_PROXY'].lower() == 'true'
     except:
         pass
-print("CORS PROXY: " + str(ENABLE_CORS_PROXY))
 
 # Rate at which RD is polled for downloads. Keep > 250
 # RD will not finish a torrent under 2.5 minutes and
@@ -51,6 +52,7 @@ REAL_DB_SERVER = "https://api.real-debrid.com/rest/1.0/"
 header = {'Authorization': 'Bearer ' + REAL_DB_KEY }
 
 API_KEY = os.environ['API_KEY']
+device = None
 
 # Config Folder
 config_folder = "./dlconfig/"
@@ -63,6 +65,11 @@ app.config["DEBUG"] = False
 device = None
 first_load = False
 jd = None
+
+# Logging Setup
+gunicorn_logger = logging.getLogger('gunicorn.error')
+app.logger.handlers = gunicorn_logger.handlers
+app.logger.setLevel(gunicorn_logger.level)
 
 # Threading Configuration
 rd_thread = None
@@ -401,21 +408,27 @@ def CORS_proxy():
 def on_shutdown():
     save_state()
 
-# Gunicorn requires this stuff to be outside the main
-
 # Check if the system is able to setup jdownloader. If not, retry in 15 seconds.
 # With unraid or docker containers that launch on boot, if DLAPI is first this will prevent a
 # crash.
 device = None
-while device == None:
+retry_count = 0
+retry_max = 5
+while retry_count < retry_max:
+    retry_count += 1
     try:
         jd, device = setup_jdownload()
-        print("JDownloader setup succeeded.")
+        app.logger.info("JDownloader setup succeeded.")
+        break
     except myjdapi.myjdapi.MYJDException as e:
-        print("JDownloader had an issue setting up. Please check your JDownloader configuration or " 
-            + "device status. Error: " + str(e))
-        print("Retrying in 15 seconds...")
+        app.logger.info("JDownloader had an issue setting up. Please check your JDownloader configuration or " 
+            + "device status. Error: " + str(e) + "\nRetrying in 15 seconds. Attempt %d/%d" % (retry_count, retry_max))
         time.sleep(15)
+
+# If we max out the retrys, exit the application. The device was not found.
+if retry_count >= retry_max:
+    app.logger.warning("JDownloader failed to setup after %d attempts." % (retry_count))
+    sys.exit(4)
 
 # Check if there is a state needing to be loaded.
 try:
@@ -434,8 +447,5 @@ scheduler.init_app(app)
 scheduler.start()
 
 if __name__ == "__main__":
-    main()
-
-def main():
     atexit.register(on_shutdown)
-    app.run(host='0.0.0.0', port=4248)
+    app.run(host='0.0.0.0', port=4248, debug=True)
