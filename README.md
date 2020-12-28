@@ -20,12 +20,12 @@ JD_DEVICE= JDownloader Device
 RD_KEY= Real Debrid API Key
 API_KEY= Custom API Key
 
-(OPTIONAL) JACKETT_IP= Jackett server IP
+(OPTIONAL) ENABLE_CORS_PROXY= true/false (default false)
+(OPTIONAL) JACKETT_URL= Jackett server IP
+(OPTIONAL) JACKETT_API_KEY= Jackett API Key
 ```
 A folder at /dlconfig/ will be created to store the file in the run directory. 
 This is so docker containers can keep config files saved if they point this using PATH.
-
-The JACKETT_IP is optional as it is only used as a proxy to get around CORS.
 
 ## API Calls
 All calls require an Authorization header </br>
@@ -66,7 +66,7 @@ Get a list of all monitored Real Debrid ID's and their download path.
 Delete all ID's being watched by the system.
 
 ### GET - /api/v1/corsproxy
-Simple CORS proxy to GET a given url.
+Simple CORS proxy to GET a given url. Disabled when it is not configured in the environment.
 
 ```
 URL Parameters:
@@ -74,6 +74,17 @@ url=[URL to proxy]
 ```
 
 This proxy will return the exact status code and text from the source.
+
+
+### GET - /api/v1/jackett/search
+Search jackett and get the raw information back. Disabled when the environment is not set.
+
+```
+{
+    'query': The item to seach for on jackett.
+    'categories': Jackett categories. '&cat=' + categories. Example: "2045,2050,2060"
+}
+```
 
 
 ## HTTP Codes
