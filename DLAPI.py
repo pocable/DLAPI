@@ -39,6 +39,15 @@ if 'ENABLE_CORS_PROXY' in os.environ:
     except:
         pass
 
+
+# Jackett API (Merging insecure jdrd into dlapi). Made as optional module.
+ENABLE_JACKETT = False
+if all (envar in os.environ for envar in ('JACKETT_URL', 'JACKETT_API_KEY')):
+    JACKETT_URL = os.environ['JACKETT_URL']
+    JACKETT_API_KEY = os.environ['JACKETT_API_KEY']
+    ENABLE_JACKETT = True
+
+
 # Rate at which RD is polled for downloads. Keep > 250
 # RD will not finish a torrent under 2.5 minutes and
 # I do not want to poll their servers too much.
@@ -402,7 +411,43 @@ def CORS_proxy():
             return req.text, req.status_code
 
     return {'Error' : 'Authentication Failed'}, 401
-    
+
+# Jackett Section, its pretty much the CORS proxy above but with jackett stuff and targeted at search.
+@app.route('/api/v1/jackett/search', methods=['GET'])
+def search_jackett():
+    if 'Authorization' in request.headers.keys():
+        if request.headers['Authorization'] == API_KEY:
+            if not ENABLE_JACKETT:
+                return {'Error': 'Jackett module is not enabled.'}, 410
+
+            content = request.get_json(silent=True, force=True)
+            
+            # Check if there is any content sent.
+            if content == None:
+                return {'Error' : 'No JSON provided'}, 400
+
+            # Get query.
+            if 'query' in content:
+                query = content['query']
+            else:
+                return {'Error': 'Missing query in request.'}, 400
+
+            # Get categories.
+            if 'categories' in content:
+                cat = content['categories']
+            else:
+                return {'Error': 'Missing categories in request.'}, 400
+
+            # Build the URL to connect to the JACKETT API.
+            build_query = JACKETT_URL + "api/v2.0/indexers/ettv/results/torznab?apikey=" + JACKETT_API_KEY + "&cat=" + cat + '&t=search&limit=300&q=' + query
+            
+            # Fix quotations and request a get to the link.
+            req = requests.get(build_query)
+
+            # Implement the jackett search functionality here.
+            return req.text, req.status_code
+
+    return {'Error' : 'Authentication Failed'}, 401
 
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
@@ -447,5 +492,9 @@ scheduler.init_app(app)
 scheduler.start()
 
 if __name__ == "__main__":
+    atexit.register(on_shutdown)
+    app.run(host='0.0.0.0', port=4248, debug=True)
+
+def main():
     atexit.register(on_shutdown)
     app.run(host='0.0.0.0', port=4248, debug=True)
