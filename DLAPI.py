@@ -420,26 +420,17 @@ def search_jackett():
             if not ENABLE_JACKETT:
                 return {'Error': 'Jackett module is not enabled.'}, 410
 
-            content = request.get_json(silent=True, force=True)
-            
-            # Check if there is any content sent.
-            if content == None:
-                return {'Error' : 'No JSON provided'}, 400
+            # Get query and categories
+            query = request.args.get('query')
+            if query == None:
+                return {'Error': 'query was not provided'}, 400
 
-            # Get query.
-            if 'query' in content:
-                query = content['query']
-            else:
-                return {'Error': 'Missing query in request.'}, 400
-
-            # Get categories.
-            if 'categories' in content:
-                cat = content['categories']
-            else:
-                return {'Error': 'Missing categories in request.'}, 400
+            categories = request.args.get('categories')
+            if categories == None:
+                return {'Error': 'categories was not provided'}, 400
 
             # Build the URL to connect to the JACKETT API.
-            build_query = JACKETT_URL + "api/v2.0/indexers/ettv/results/torznab?apikey=" + JACKETT_API_KEY + "&cat=" + cat + '&t=search&limit=300&q=' + query
+            build_query = JACKETT_URL + "api/v2.0/indexers/ettv/results/torznab?apikey=" + JACKETT_API_KEY + "&cat=" + categories + '&t=search&limit=300&q=' + query
             
             # Fix quotations and request a get to the link.
             req = requests.get(build_query)

@@ -80,10 +80,9 @@ This proxy will return the exact status code and text from the source.
 Search jackett and get the raw information back. Disabled when the environment is not set.
 
 ```
-{
-    'query': The item to seach for on jackett.
-    'categories': Jackett categories. '&cat=' + categories. Example: "2045,2050,2060"
-}
+URL Parameters:
+query=[The item to seach for on jackett.]
+categories=[Jackett categories. '&categories=' + categories. Example: "2045,2050,2060"]
 ```
 
 
