@@ -23,9 +23,13 @@ API_KEY= Custom API Key
 (OPTIONAL) ENABLE_CORS_PROXY= true/false (default false)
 (OPTIONAL) JACKETT_URL= Jackett server IP
 (OPTIONAL) JACKETT_API_KEY= Jackett API Key
+(OPTIONAL) USER_PASS= The user password for sessioning. Not required.
+(OPTIONAL) SESSION_EXPIRY_DAYS= The number of days before a session expires. Default = 1
 ```
 A folder at /dlconfig/ will be created to store the file in the run directory. 
 This is so docker containers can keep config files saved if they point this using PATH.
+
+Note that the session expiry is personal preference, but should be limited in order to secure the system.
 
 ## API Calls
 All calls require an Authorization header </br>
@@ -85,6 +89,33 @@ query=[The item to seach for on jackett.]
 categories=[Jackett categories. '&categories=' + categories. Example: "2045,2050,2060"]
 ```
 
+### POST - /api/v1/authenticate
+Authenticate a given user password in order to recieve a token. This module is optional but allows for cookie saving in JDRD.
+```
+{
+    'userpass': The userpassword set earlier.
+}
+
+returns 
+
+{
+    'token': The returned session token.
+}
+```
+
+### POST - /api/v1/authenticate/validtoken
+Check if a token is still valid on the server side. 
+```
+{
+    'token': The user token.
+}
+
+returns
+
+{
+    'isvalid': boolean if its valid.
+}
+```
 
 ## HTTP Codes
 | HTTP Codes | Description                                                |

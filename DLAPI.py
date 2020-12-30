@@ -23,6 +23,16 @@ import logging
 # URL fixing
 from urllib.parse import unquote_plus
 
+# Timing
+from datetime import date, timedelta
+
+# Sessions
+import secrets
+
+# Limiting
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -47,6 +57,18 @@ if all (envar in os.environ for envar in ('JACKETT_URL', 'JACKETT_API_KEY')):
     JACKETT_API_KEY = os.environ['JACKETT_API_KEY']
     ENABLE_JACKETT = True
 
+# Sessioning Module
+ENABLE_SESSIONING = False
+SESSION_PASSWORD = ""
+sessions = []
+if 'USER_PASS' in os.environ:
+    SESSION_PASSWORD = os.environ['USER_PASS']
+    ENABLE_SESSIONING = True
+
+SESSION_EXPIRY_DAYS = 1
+if 'SESSION_EXPIRY_DAYS' in os.environ:
+    SESSION_EXPIRY_DAYS = int(os.environ['SESSION_EXPIRY_DAYS'])
+
 
 # Rate at which RD is polled for downloads. Keep > 250
 # RD will not finish a torrent under 2.5 minutes and
@@ -55,6 +77,9 @@ rate_delay = 150
 
 # Save Interval
 save_interval = 60
+
+# Session check interval
+session_interval = 1200
 
 # Should not be changed
 REAL_DB_SERVER = "https://api.real-debrid.com/rest/1.0/"
@@ -74,6 +99,9 @@ app.config["DEBUG"] = False
 device = None
 first_load = False
 jd = None
+
+# Rate Limiting
+limiter = Limiter(app, key_func=get_remote_address)
 
 # Logging Setup
 gunicorn_logger = logging.getLogger('gunicorn.error')
@@ -99,10 +127,33 @@ class Config(object):
             'args': (),
             'trigger': 'interval',
             'seconds': save_interval
+        },
+        {
+            'id': 'SessionManager',
+            'func': __name__ + ":session_manager",
+            'args': (),
+            'trigger': 'interval',
+            'seconds': session_interval
         }
     ]
 
     SCHEDULER_API_ENABLED = True
+
+# Class representing a user session.
+class Session():
+    def __init__(self, ip, token, expiry):
+        self._ip = ip
+        self._token = token
+        self._expiry = expiry
+
+    def get_ip(self):
+        return self._ip
+
+    def get_token(self):
+        return self._token
+
+    def get_expiry(self):
+        return self._expiry
 
 """
 Get the real debrid download url from the website
@@ -266,6 +317,16 @@ def rd_listener():
                 del watched_content[file['id']]
                 continue
 
+# Check for expired sessions and remove them from the session list.
+def session_manager():
+    current_time = date.today()
+    for session in sessions:
+        if session == None:
+            return
+
+        if session.get_expiry() < current_time:
+            sessions.remove(session)
+
 """
 Save the current program state.
 """
@@ -282,7 +343,7 @@ def save_state():
 @app.route('/api/v1/content', methods=['POST'])
 def add_content():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             id = None
             title = None
             content = request.get_json(silent=True, force=True)
@@ -341,7 +402,7 @@ def add_content():
 def remove_content():
 
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             content = request.get_json(silent=True, force=True)
             if content == None:
                 return {'Error' : 'No JSON provided'}, 400
@@ -364,7 +425,7 @@ def remove_content():
 @app.route('/api/v1/content/all', methods=['GET'])
 def get_content():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             return jsonify(watched_content)
 
     return {'Error' : 'Authentication Failed'}, 401
@@ -373,7 +434,7 @@ def get_content():
 @app.route('/api/v1/content/all', methods=['DELETE'])
 def delete_all_content():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             watched_content = {}
             return {}, 200
 
@@ -383,7 +444,7 @@ def delete_all_content():
 @app.route('/api/v1/content/check', methods=['GET'])
 def trigger_check():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             rd_listener()
             return {}, 200
 
@@ -393,7 +454,7 @@ def trigger_check():
 @app.route('/api/v1/corsproxy', methods=['GET'])
 def CORS_proxy():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             if not ENABLE_CORS_PROXY:
                 return {'Error': 'CORS proxy is not enabled.'}, 410
             
@@ -416,7 +477,7 @@ def CORS_proxy():
 @app.route('/api/v1/jackett/search', methods=['GET'])
 def search_jackett():
     if 'Authorization' in request.headers.keys():
-        if request.headers['Authorization'] == API_KEY:
+        if authenticate_user(request.headers['Authorization'], request.remote_addr):
             if not ENABLE_JACKETT:
                 return {'Error': 'Jackett module is not enabled.'}, 410
 
@@ -439,6 +500,106 @@ def search_jackett():
             return req.text, req.status_code
 
     return {'Error' : 'Authentication Failed'}, 401
+
+
+@app.route('/api/v1/authenticate', methods=['POST'])
+@limiter.limit("5/minute")
+def authenticate():
+
+    if not ENABLE_SESSIONING:
+        return {'Error': 'Sessioning is not enabled. This call is not required.'}, 410
+
+    content = request.get_json(silent=True, force=True)
+    if content == None:
+        return {'Error' : 'No JSON provided'}, 400
+
+    # Get the userpass
+    if 'userpass' in content:
+        userpass = content['userpass']
+    else:
+        return {'Error': 'userpass was not provided'}, 400
+
+    # If it matches the userpass or the api key, create a session.
+    if userpass == SESSION_PASSWORD or userpass == API_KEY:
+        return {'token': create_session(request.remote_addr)}, 200
+
+
+    return {'Error' : 'Authentication Failed'}, 401
+
+@app.route('/api/v1/authenticate/validtoken', methods=['POST'])
+def is_valid_token():
+    if not ENABLE_SESSIONING:
+        return {'Error': 'Sessioning is not enabled. This call is not required.'}, 410
+
+    content = request.get_json(silent=True, force=True)
+    if content == None:
+        return {'Error' : 'No JSON provided'}, 400
+
+    # Get the token if its there
+    if 'token' in content:
+        token = content['token']
+    else:
+        return {'Error': 'token was not provided'}, 400
+
+    # Check each session for ip and token equal. If it is the token is valid.
+    for s in sessions:
+        if s.get_ip() == request.remote_addr and s.get_token() == token:
+            return {'is_valid': True}
+
+    return {'is_valid': False}
+
+@app.route('/api/v1/authenticate/closesession', methods=['POST'])
+def close_session():
+    if not ENABLE_SESSIONING:
+        return {'Error': 'Sessioning is not enabled. This call is not required.'}, 410
+
+    content = request.get_json(silent=True, force=True)
+    if content == None:
+        return {'Error' : 'No JSON provided'}, 400
+
+    # Get the token if its there
+    if 'token' in content:
+        token = content['token']
+    else:
+        return {'Error': 'token was not provided'}, 400
+
+    # Check each session for ip and token equal. If it is the token is valid.
+    for s in sessions:
+        if s.get_ip() == request.remote_addr and s.get_token() == token:
+            sessions.remove(s)
+            return {}, 200
+    return {}, 200
+
+
+"""
+Create a session given the ip
+ip: The user ip
+returns: a token for the session.
+"""
+def create_session(ip):
+    token = secrets.token_urlsafe()
+    s = Session(ip, token, date.today() + timedelta(days=SESSION_EXPIRY_DAYS))
+    sessions.append(s)
+    return token
+
+
+"""
+Authenticate the user.
+item: either the api key or a user session token
+ip: if its a user session token, want the ip to verify.
+
+returns: if the user is authenticated
+"""
+def authenticate_user(item, ip=None):
+    if item == API_KEY:
+        return True
+    
+    if ip != None and ENABLE_SESSIONING:
+        for z in sessions:
+            if z.get_token() == item and z.get_ip() == ip:
+                return True
+    
+    return False
 
 # Called when the appliation is shutdown. Saves the watched content list for resuming later.
 def on_shutdown():
