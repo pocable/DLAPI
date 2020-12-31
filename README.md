@@ -23,7 +23,7 @@ API_KEY= Custom API Key
 (OPTIONAL) ENABLE_CORS_PROXY= true/false (default false)
 (OPTIONAL) JACKETT_URL= Jackett server IP
 (OPTIONAL) JACKETT_API_KEY= Jackett API Key
-(OPTIONAL) USER_PASS= The user password for sessioning. Not required.
+(OPTIONAL) USER_PASS= The user password for sessioning. Required for sessioning to be enabled.
 (OPTIONAL) SESSION_EXPIRY_DAYS= The number of days before a session expires. Default = 1
 ```
 A folder at /dlconfig/ will be created to store the file in the run directory. 
