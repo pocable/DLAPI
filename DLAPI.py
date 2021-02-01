@@ -490,8 +490,10 @@ def search_jackett():
             if categories == None:
                 return {'Error': 'categories was not provided'}, 400
 
+            categories = '&Category=' + '&Category='.join(categories.split(','))
+
             # Build the URL to connect to the JACKETT API.
-            build_query = JACKETT_URL + "api/v2.0/indexers/ettv/results/torznab?apikey=" + JACKETT_API_KEY + "&cat=" + categories + '&t=search&limit=300&q=' + query
+            build_query = JACKETT_URL + "api/v2.0/indexers/all/results/?apikey=" + JACKETT_API_KEY + categories + '&t=search&limit=1000&Query=' + query
             
             # Fix quotations and request a get to the link.
             req = requests.get(build_query)
