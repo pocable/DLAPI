@@ -358,8 +358,10 @@ def add_content():
             elif 'url' in content:
 
                 # Resolve the url to get the magnet link
-                o_url = content['url']
-                url = o_url
+                url = content['url']
+                if url == None:
+                    return{'Error' : "No link was provided"}, 400
+                    
                 try:
                     url = requests.get(url).url
                 except requests.exceptions.InvalidSchema as e:
