@@ -18,6 +18,7 @@ if __name__ == "__main__":
     for item in conf.keys():
         os.environ[item] = conf[item]
 
+    # Note that the state is not saved when running this development file.
     import DLAPI
     DLAPI.main()
     input()

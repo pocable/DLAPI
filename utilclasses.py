@@ -32,12 +32,13 @@ class EventDictionary(dict):
         self.callback = callback
 
     def __setitem__(self, key, value):
-        self.callback(key, value, DictionaryEventType.SET_EVENT)
         super().__setitem__(key, value)
+        self.callback(key, value, DictionaryEventType.SET_EVENT)
 
     def __delitem__(self, key):
-        self.callback(key, self[key], DictionaryEventType.DEL_EVENT)
+        value = self[key]
         super().__delitem__(key)
+        self.callback(key, value, DictionaryEventType.DEL_EVENT)
 
 
 # Test cases for a dictionary that will callback when a value is changed in it
