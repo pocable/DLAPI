@@ -33,6 +33,9 @@ import secrets
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Utils
+from utilclasses import Session
+
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -138,22 +141,6 @@ class Config(object):
     ]
 
     SCHEDULER_API_ENABLED = True
-
-# Class representing a user session.
-class Session():
-    def __init__(self, ip, token, expiry):
-        self._ip = ip
-        self._token = token
-        self._expiry = expiry
-
-    def get_ip(self):
-        return self._ip
-
-    def get_token(self):
-        return self._token
-
-    def get_expiry(self):
-        return self._expiry
 
 """
 Get the real debrid download url from the website
