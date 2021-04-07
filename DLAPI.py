@@ -33,6 +33,9 @@ import secrets
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Utils
+from utilclasses import Session, EventDictionary
+
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
 JDOWNLOADER_PASS = os.environ['JD_PASS']
@@ -92,13 +95,28 @@ device = None
 config_folder = "./dlconfig/"
 
 # Internal global items and flask configuration
-watched_content = {}
 app = flask.Flask(__name__)
 CORS(app)
 app.config["DEBUG"] = False
 device = None
 first_load = False
 jd = None
+
+# Session Saving
+"""
+Save the current program state.
+"""
+def content_callback(key, val, ev):
+    save_state()
+
+def save_state():
+    if first_load:
+        f = open(config_folder + "state.txt", 'w')
+        f.write(json.dumps(watched_content))
+        f.close()
+
+watched_content = EventDictionary(content_callback)
+
 
 # Rate Limiting
 limiter = Limiter(app, key_func=get_remote_address)
@@ -122,13 +140,6 @@ class Config(object):
             'seconds': rate_delay
         },
         {
-            'id': 'SaveFunc',
-            'func': __name__ + ':save_state',
-            'args': (),
-            'trigger': 'interval',
-            'seconds': save_interval
-        },
-        {
             'id': 'SessionManager',
             'func': __name__ + ":session_manager",
             'args': (),
@@ -138,22 +149,6 @@ class Config(object):
     ]
 
     SCHEDULER_API_ENABLED = True
-
-# Class representing a user session.
-class Session():
-    def __init__(self, ip, token, expiry):
-        self._ip = ip
-        self._token = token
-        self._expiry = expiry
-
-    def get_ip(self):
-        return self._ip
-
-    def get_token(self):
-        return self._token
-
-    def get_expiry(self):
-        return self._expiry
 
 """
 Get the real debrid download url from the website
@@ -327,16 +322,6 @@ def session_manager():
         if session.get_expiry() < current_time:
             sessions.remove(session)
 
-"""
-Save the current program state.
-"""
-def save_state():
-    if first_load:
-        f = open(config_folder + "state.txt", 'w')
-        f.write(json.dumps(watched_content))
-        f.close()
-
-
 # Flask Routing
 
 # Endpoint to add content to be watched
@@ -358,8 +343,10 @@ def add_content():
             elif 'url' in content:
 
                 # Resolve the url to get the magnet link
-                o_url = content['url']
-                url = o_url
+                url = content['url']
+                if url == None:
+                    return{'Error' : "No link was provided"}, 400
+                    
                 try:
                     url = requests.get(url).url
                 except requests.exceptions.InvalidSchema as e:
@@ -435,7 +422,7 @@ def get_content():
 def delete_all_content():
     if 'Authorization' in request.headers.keys():
         if authenticate_user(request.headers['Authorization'], request.remote_addr):
-            watched_content = {}
+            watched_content = EventDictionary(content_callback)
             return {}, 200
 
     return {'Error' : 'Authentication Failed'}, 401
@@ -632,7 +619,8 @@ if retry_count >= retry_max:
 # Check if there is a state needing to be loaded.
 try:
     f = open(config_folder + "state.txt", 'r')
-    watched_content = json.loads(f.read())
+    watched_middle = json.loads(f.read())
+    watched_content.update(watched_middle)
     f.close()
 except Exception:
     pass
@@ -647,7 +635,7 @@ scheduler.start()
 
 if __name__ == "__main__":
     atexit.register(on_shutdown)
-    app.run(host='0.0.0.0', port=4248, debug=True)
+    app.run(host='0.0.0.0', port=4248, debug=False)
 
 def main():
     atexit.register(on_shutdown)
