@@ -3,11 +3,18 @@ import unittest
 import json
 import os
 
-# These test cases require the environment file and are indeed very slow.
-# Please note that these tests will start a download for Abraham Lincoln 1930
-# if you have a media/test directory. This was the first public domain movie
-# I could find.
 class TestJDownloadManager(unittest.TestCase):
+    """
+    Test cases for the JDownloadManager
+
+    These test cases require the environment file and are indeed very slow.
+    Please note that these tests will start a download for Abraham Lincoln 1930
+    and Africa Screams 1949 if you have a media/test directory. 
+    This was the first public domain movie I could find.
+
+    NOTE: These tests may require you to remove them from JDownloader as if its
+    a duplicate it will ask you if its ok.
+    """
 
     # Setup the environment for the tests.
     def setUp(self):
@@ -35,5 +42,5 @@ class TestJDownloadManager(unittest.TestCase):
     # When it works, it only returns the id as a result key. Quick check.
     def test_disconnection_reconnect_jd(self):
         self.mngr.get_jd().disconnect()
-        result = self.mngr.download(['https://real-debrid.com/d/2ORZVLBF6KKJC'], 'test')
+        result = self.mngr.download(['https://real-debrid.com/d/N4YX2ZE3HTEDO'], 'test')
         self.assertEqual(list(result.keys()), ['id'])

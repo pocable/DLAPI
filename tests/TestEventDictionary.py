@@ -1,8 +1,11 @@
 from dlapi.utilclasses import EventDictionary, DictionaryEventType
 import unittest
 
-# Test cases for a dictionary that will callback when a value is changed in it
 class TestEventDictionary(unittest.TestCase):
+    """
+    Test functions related to the EventDictionary class.
+    """
+
     def test_add_item(self):
         def callback(key, value, event):
             self.assertEqual(event, DictionaryEventType.SET_EVENT)
