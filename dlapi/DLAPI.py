@@ -34,7 +34,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Utils
-from utilclasses import Session, EventDictionary
+from dlapi.utilclasses import Session, EventDictionary
 
 # https://my.jdownloader.org/
 JDOWNLOADER_USER = os.environ['JD_USER']
