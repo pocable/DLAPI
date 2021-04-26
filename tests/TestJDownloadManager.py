@@ -1,4 +1,4 @@
-from dlapi.JDownloadManager import JDownloadManager
+from dlapi.managers import JDownloadManager
 import unittest
 import json
 import os

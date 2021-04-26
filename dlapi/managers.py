@@ -1,24 +1,51 @@
+
+import myjdapi
 from datetime import date, timedelta
 import secrets
+from dlapi.utilclasses import Session
 
-# Class representing a user session. Just a struct.
-class Session():
-    def __init__(self, ip, token, expiry):
-        self._ip = ip
-        self._token = token
-        self._expiry = expiry
+# Controller for JDownloader
+class JDownloadManager():
+    def __init__(self, username, password, device_name):
+        self.username = username
+        self.password = password
+        self.device_name = device_name
+        self._initialize_session()
 
-    def get_ip(self):
-        return self._ip
+    def download(self, urls, path):
+        # Check to see if we are connected, if not try to reconnect, and at worse connect from the start
+        self._restart_session()
+        return self.device.linkgrabber.add_links([{'autostart': True, 'links': '\n'.join(urls), 'destinationFolder': path + "", "overwritePackagizerRules": True}])
 
-    def get_token(self):
-        return self._token
+    def get_device(self):
+        return self.device
 
-    def get_expiry(self):
-        return self._expiry
+    def get_jd(self):
+        return self.jd
 
-    def __str__(self):
-        return "IP: %s - Token: %s - Expiry: %s" % (self._ip, self._token, self._expiry)
+    """
+    Refresh a session depending on if it is connected or not
+    """
+    def _restart_session(self):
+        if self.jd.is_connected():
+            self.jd.reconnect()
+        else:
+            self.jd.connect(self.username, self.password)
+            self.jd.update_devices()
+            self.device = self.jd.get_device(self.device_name)
+
+    """
+    Starts a session with JDownloader. Called on construction of this class.
+    """
+    def _initialize_session(self):
+        jd = myjdapi.Myjdapi()
+        jd.set_app_key("DLAPI")
+        jd.connect(self.username, self.password)
+        jd.update_devices()
+        device = jd.get_device(self.device_name)
+        self.jd = jd
+        self.device = device
+        return jd, device
 
 # Class to handle the management of user sessions with the application.
 class SessionManager():

@@ -1,4 +1,5 @@
-from dlapi.SessionManager import SessionManager, Session
+from dlapi.managers import SessionManager
+from dlapi.utilclasses import Session
 import unittest
 
 # Test cases for the session manager. It is a basic class so these will be quick.
