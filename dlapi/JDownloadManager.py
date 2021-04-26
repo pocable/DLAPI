@@ -1,9 +1,6 @@
 
 import myjdapi
 
-class JDownloadManagerException(BaseException):
-    pass
-
 class JDownloadManager():
     def __init__(self, username, password, device_name):
         self.username = username
