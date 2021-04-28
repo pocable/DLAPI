@@ -15,6 +15,7 @@ provided to make it easier, otherwise do the following steps:
 ## Development Setup
 This is only for if you want to work on the code.
 * Run pip install -r requirements.txt
+* Run pip install -e .
 * Modify ENVIRONMENT.bat to declare your environment variables
 * Run the bat file depending on if you want to run the application or test it
 
