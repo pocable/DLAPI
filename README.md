@@ -12,6 +12,12 @@ provided to make it easier, otherwise do the following steps:
 * Run: make build
 * Run: make run
 
+## Development Setup
+This is only for if you want to work on the code.
+* Run pip install -r requirements.txt
+* Modify ENVIRONMENT.bat to declare your environment variables
+* Run the bat file depending on if you want to run the application or test it
+
 ### Environment File
 ```
 JD_USER= JDownloader Username

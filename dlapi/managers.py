@@ -1,7 +1,7 @@
 
 from datetime import date, timedelta
 import secrets
-from dlapi.utilclasses import Session, EventDictionary
+from dlapi.utilclasses import Session, EventDictionary, DictionaryEventType
 from myjdapi.myjdapi import Jddevice, Myjdapi
 import functools
 from flask import request
@@ -80,13 +80,11 @@ class SessionManager():
     Class to handle the management of user sessions with the application
     Attributes:
         expiry_days: number of days until we expire a session
-        session_check: number of seconds until we auto execute remove expired session
-        tiemr: The threading timer object
+        ip_sessions: dictionary to keep track of sessions
     """
-    def __init__(self, expiry_days: int, session_check: int = 60 * 60):
+    def __init__(self, expiry_days: int):
         self.expiry_days = expiry_days
         self.ip_sessions = {}
-        self.session_check = session_check
 
     """
     Close a provided session
@@ -324,3 +322,38 @@ class RDManager():
                     continue
 
         return True
+
+
+class StateManager(EventDictionary):
+    """
+    Manager for controlling the internal state file saved when needed.
+
+    Attributes:
+        config_path: The path where the file is saved at for the state.
+    """
+
+    def __init__(self, config_path: str):
+        super().__init__(self._callback)
+        self.config_path = config_path
+
+    """
+    Internal callback to save the state everytime we are updated.
+    """
+    def _callback(self, e: str, v: str, d: DictionaryEventType):
+        self.save_state()
+
+    """
+    Save our state to the file.
+    """
+    def save_state(self):
+        f = open(self.config_path, 'w')
+        f.write(json.dumps(self))
+        f.close()
+
+    """
+    Load state from the file on the path.
+    """
+    def load_state(self):
+        f = open(self.config_path, 'r')
+        self.update(json.loads(f.read()))
+        f.close()
