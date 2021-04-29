@@ -2,6 +2,7 @@ from dlapi.managers import SessionManager
 from dlapi.utilclasses import Session
 import unittest
 from datetime import date, timedelta
+import os
 
 class TestSessionManager(unittest.TestCase):
     """
@@ -109,5 +110,10 @@ class TestSessionManager(unittest.TestCase):
         
         self.assertEqual(mngr.authenticate_user('192.168.0.1', 'tokentest'), False)
         self.assertEqual(mngr.authenticate_user('192.168.0.2', 'test'), True)
-        
+    
+    # Test authenticating with the api key. IP will not matter in this case.
+    def test_authenticate_with_api_key(self):
+        mngr = SessionManager(10)
+        self.assertTrue(mngr.authenticate_user('192.168.0.1', os.environ['API_KEY']))
+        self.assertFalse(mngr.authenticate_user('192.168.0.1', os.environ['API_KEY'][:-1]))
 

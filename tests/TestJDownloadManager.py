@@ -18,20 +18,11 @@ class TestJDownloadManager(unittest.TestCase):
 
     # Setup the environment for the tests.
     def setUp(self):
-        self.conf = None
-        f = open('DLAPI_KEYS_START.txt', 'r')
-        item = f.read()
-        f.close()
-        self.conf = json.loads(item)
-
-        for item in self.conf.keys():
-            os.environ[item] = self.conf[item]
-
-        self.mngr = JDownloadManager(self.conf['JD_USER'], self.conf['JD_PASS'], self.conf['JD_DEVICE'])
+        self.mngr = JDownloadManager(os.environ['JD_USER'], os.environ['JD_PASS'], os.environ['JD_DEVICE'])
 
     # Test to see if the device was created properly.
     def test_device_conection(self):
-        self.assertEqual(self.conf['JD_DEVICE'], self.mngr.get_device().name)
+        self.assertEqual(os.environ['JD_DEVICE'], self.mngr.get_device().name)
 
     # Test that the manager download works.
     def test_download(self):

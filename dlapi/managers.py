@@ -1,4 +1,3 @@
-
 from datetime import date, timedelta
 import secrets
 from dlapi.utilclasses import Session, EventDictionary, DictionaryEventType
@@ -7,6 +6,7 @@ import functools
 from flask import request
 import requests
 import json
+import os
 import logging
 
 class JDownloadManager():
@@ -106,7 +106,8 @@ class SessionManager():
 
     """
     Check for expired sessions and remove them from the session list
-    NOTE: This function can be slow with a massive load of people
+    NOTE: This function can be slow with a massive load of people.
+    In reality though there shouldn't be 50+ connections per houseold IP.
     """
     def remove_expired_sessions(self):
         current_time = date.today()
@@ -133,8 +134,12 @@ class SessionManager():
     """
     def authenticate_user(self, ip: str, token: str) -> bool:
 
+        # If the token provided is the API key, let them through!
+        if token == os.environ['API_KEY']:
+            return True
+
         # Check if the ip is in the sessions, then iterate over all sessions at the house
-        # until either it finds a valid session or it returns False
+        # until either it finds a valid session or it returns False        
         if ip in self.ip_sessions:
             sessions = self.ip_sessions[ip]
             for session in sessions:

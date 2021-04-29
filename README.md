@@ -13,7 +13,7 @@ provided to make it easier, otherwise do the following steps:
 * Run: make run
 
 ## Development Setup
-This is only for if you want to work on the code.
+This is only if you want to run it locally without docker.
 * Run pip install -r requirements.txt
 * Run pip install -e .
 * Modify ENVIRONMENT.bat to declare your environment variables
@@ -120,7 +120,7 @@ Check if a token is still valid on the server side.
 returns
 
 {
-    'isvalid': boolean if its valid.
+    'is_valid': boolean if its valid.
 }
 ```
 

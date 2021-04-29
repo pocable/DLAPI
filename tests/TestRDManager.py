@@ -17,17 +17,8 @@ class TestRDManager(unittest.TestCase):
     """
 
     def setUp(self):
-        self.conf = None
-        f = open('DLAPI_KEYS_START.txt', 'r')
-        item = f.read()
-        f.close()
-        self.conf = json.loads(item)
-
-        for item in self.conf.keys():
-            os.environ[item] = self.conf[item]
-
-        self.jmanager = JDownloadManager(self.conf['JD_USER'], self.conf['JD_PASS'], self.conf['JD_DEVICE'])
-        self.rmanager = RDManager(self.conf['RD_KEY'], logging.getLogger(), self.jmanager)
+        self.jmanager = JDownloadManager(os.environ['JD_USER'], os.environ['JD_PASS'], os.environ['JD_DEVICE'])
+        self.rmanager = RDManager(os.environ['RD_KEY'], logging.getLogger(), self.jmanager)
     
     # Test sending a link to rd and getting download urls at once.
     def test_get_rd_download_urls(self):
