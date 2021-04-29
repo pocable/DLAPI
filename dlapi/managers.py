@@ -304,7 +304,7 @@ class RDManager():
                 # If its downloaded and ready, process and remove for next cycle. 
                 # Otherwise if error log and remove.
                 if file['status'] == 'downloaded':
-                    self._download_id_and_remove_if_success(file['id'], watched_content[file['id']], watched_content)
+                    self._download_id_and_remove_if_success(file['id'], watched_content[file['id']]['path'], watched_content)
                 elif file['status'] == 'magnet_error':
                     self._logger.error("Magnet error on torrent with id: %s, path: %s" 
                         % (file['id'], watched_content[file['id']]))
