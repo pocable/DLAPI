@@ -19,7 +19,7 @@ This is only if you want to run it locally without docker.
 * Modify ENVIRONMENT.bat to declare your environment variables
 * Run the bat file depending on if you want to run the application or test it
 
-### Environment File
+## Environment File
 ```
 JD_USER= JDownloader Username
 JD_PASS= JDownloader Password
