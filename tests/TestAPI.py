@@ -189,7 +189,7 @@ class TestAPI(unittest.TestCase):
     def test_posting_magnet(self):
         with app.test_client() as c:
             state_manager.clear()
-            response = c.post('/api/v1/content', json={'magnet_url': 'magnet:?xt=urn:btih:11ea02584fa6351956f35671962ab46354d99060',
+            response = c.post('/api/v1/content', json={'magnet_url': os.environ['TEST_MAGNET'],
              'title': 'Test Magnet File', 'path': '/test'}, headers={'Authorization': os.environ['API_KEY']})
 
             self.assertEqual(response.status_code, 200)

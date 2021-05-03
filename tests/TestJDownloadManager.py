@@ -26,12 +26,12 @@ class TestJDownloadManager(unittest.TestCase):
 
     # Test that the manager download works.
     def test_download(self):
-        result = self.mngr.download(['https://real-debrid.com/d/2ORZVLBF6KKJC'], 'test')
+        result = self.mngr.download([os.environ['TEST_RD_LINK_ONE']], 'test')
         self.assertEqual(list(result.keys()), ['id'])
 
     # Test to see if when we call download after its disconnection it will work as intended.
     # When it works, it only returns the id as a result key. Quick check.
     def test_disconnection_reconnect_jd(self):
         self.mngr.get_jd().disconnect()
-        result = self.mngr.download(['https://real-debrid.com/d/N4YX2ZE3HTEDO'], 'test')
+        result = self.mngr.download([os.environ['TEST_RD_LINK_TWO']], 'test')
         self.assertEqual(list(result.keys()), ['id'])

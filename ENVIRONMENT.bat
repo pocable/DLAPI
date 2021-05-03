@@ -10,3 +10,9 @@ set JACKETT_URL=
 set JACKETT_API_KEY=
 set USER_PASS=
 set SESSION_EXPIRY_DAYS=1
+
+rem The below environment settings are required for testing.
+set TEST_MAGNET=magnet:?
+set TEST_RD_LINK_ONE=https://real-debrid.com/d/
+set TEST_RD_LINK_TWO=https://real-debrid.com/d/
+set TEST_RD_ID=
