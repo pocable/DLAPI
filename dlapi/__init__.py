@@ -23,6 +23,7 @@ session_manager = SessionManager(int(os.environ['SESSION_EXPIRY_DAYS']) if 'SESS
 jdownload_manager = JDownloadManager(os.environ['JD_USER'], os.environ['JD_PASS'], os.environ['JD_DEVICE'])
 real_debrid_manager = RDManager(os.environ['RD_KEY'], logger, jdownload_manager)
 state_manager = StateManager("./dlconfig/state.txt")
+state_manager.load_state()
 
 # Configuration object for scheduling update
 class Config(object):

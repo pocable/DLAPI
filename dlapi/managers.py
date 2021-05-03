@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 import secrets
 from dlapi.utilclasses import Session, EventDictionary, DictionaryEventType
-from myjdapi.myjdapi import Jddevice, Myjdapi
+from myjdapi.myjdapi import Jddevice, Myjdapi, MYJDException
 import functools
 from flask import request
 import requests
@@ -54,12 +54,18 @@ class JDownloadManager():
     Refresh the session with JDownloader
     """
     def _restart_session(self):
-        if self.jd.is_connected():
-            self.jd.reconnect()
-        else:
-            self.jd.connect(self.username, self.password)
-            self.jd.update_devices()
-            self.device = self.jd.get_device(self.device_name)
+
+        # Try to reconnect if we can, if there is an exception, restart the connection.
+        try:
+            if self.jd.is_connected():
+                self.jd.reconnect()
+                return
+        except MYJDException:
+            pass
+
+        self.jd.connect(self.username, self.password)
+        self.jd.update_devices()
+        self.device = self.jd.get_device(self.device_name)
 
     """
     Starts a session with JDownloader. Called on construction of this class
