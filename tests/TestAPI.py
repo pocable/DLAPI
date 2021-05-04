@@ -8,7 +8,6 @@ class TestAPI(unittest.TestCase):
     Test cases to test the main API function calls. This uses the flask client to test.
     NOTE: These test cases require all of the functionality to be enabled.
     NOTE: State is cleared from these tests.
-    NOTE: Night of the living dead could potentially be downloaded if rd_listener races before tests are done and will flood your RD!
     """
     def setUp(self):
 

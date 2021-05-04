@@ -33,7 +33,7 @@ class Config(object):
             'func': real_debrid_manager.rd_listener,
             'args': (state_manager,),
             'trigger': 'interval',
-            'seconds': 5
+            'seconds': 15
         },
         {
             'id': 'SessionManager',

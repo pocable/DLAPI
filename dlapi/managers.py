@@ -276,9 +276,16 @@ class RDManager():
         self.download_id(id, path)
         if id in eventdict.keys():
             del eventdict[id]
+          
+    """
+    Select all files for the given id when it has waiting_file_selection
+    """
+    def _select_files_for_torrent(self, id: str):
+        req = requests.post(self._server + "torrents/selectFiles/" + id, data={'files': 'all'}, headers=self._header)
+        res = json.loads(req.text)
 
     """
-    Function to check with real debrid to see if
+    Function to check with real debrid to see file status and react accordingly
     """
     def rd_listener(self, watched_content: EventDictionary) -> bool:
         
@@ -300,12 +307,14 @@ class RDManager():
             return False
 
         res = json.loads(req.text)
-
+        seen_ids = {}
+        
         # For each of the different torrent files we obtained
         for file in res:
 
             # If the file is being watched, check status
-            if file['id'] in watched_content.keys():
+            if file['id'] in watched_content:
+                seen_ids[file['id']] = True
 
                 # If its downloaded and ready, process and remove for next cycle. 
                 # Otherwise if error log and remove.
@@ -331,6 +340,18 @@ class RDManager():
                         % (file['id'], watched_content[file['id']]))
                     del watched_content[file['id']]
                     continue
+                elif file['status'] == 'waiting_files_selection':
+                    self._select_files_for_torrent(file['id'])
+                    del watched_content[file['id']]
+                    continue
+        
+        # Remove all ids that were not included in the torrents check.
+        # I believe this only happens when the torrent is deleted from real-debrid.
+        for id in list(watched_content.keys()):
+            if id not in seen_ids:
+                self._logger.warning("Torrent failed to be checked with RD (deleted from torrents?) id: %s, path: %s" 
+                    % (id, watched_content[id]))
+                del watched_content[id]
 
         return True
 
