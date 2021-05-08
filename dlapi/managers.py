@@ -60,7 +60,7 @@ class JDownloadManager():
             if self.jd.is_connected():
                 self.jd.reconnect()
                 return
-        except MYJDException:
+        except:
             pass
 
         self.jd.connect(self.username, self.password)
