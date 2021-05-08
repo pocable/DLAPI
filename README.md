@@ -131,3 +131,4 @@ returns
 | 400        | Error in the input. See the content message for which one. |
 | 401        | Authentication failed. Check your DLAPI key.               |
 | 410        | The ID provided does not exist/is not watched.             |
+| 417        | Response issue from Real Debrid. Check message for info.   |
