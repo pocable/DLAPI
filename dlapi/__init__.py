@@ -20,7 +20,7 @@ limiter = Limiter(app, key_func=get_remote_address)
 
 # Managers
 session_manager = SessionManager(int(os.environ['SESSION_EXPIRY_DAYS']) if 'SESSION_EXPIRY_DAYS' in os.environ else 1)
-jdownload_manager = JDownloadManager(os.environ['JD_USER'], os.environ['JD_PASS'], os.environ['JD_DEVICE'])
+jdownload_manager = JDownloadManager(os.environ['JD_USER'], os.environ['JD_PASS'], os.environ['JD_DEVICE'], logger)
 real_debrid_manager = RDManager(os.environ['RD_KEY'], logger, jdownload_manager)
 state_manager = StateManager("./dlconfig/state.txt")
 state_manager.load_state()

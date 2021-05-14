@@ -8,9 +8,6 @@ class TestJDownloadManager(unittest.TestCase):
     Test cases for the JDownloadManager
 
     These test cases require the environment file and are indeed very slow.
-    Please note that these tests will start a download for Abraham Lincoln 1930
-    and Africa Screams 1949 if you have a media/test directory. 
-    This was the first public domain movie I could find.
 
     NOTE: These tests may require you to remove them from JDownloader as if its
     a duplicate it will ask you if its ok.

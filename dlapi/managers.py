@@ -8,6 +8,7 @@ import requests
 import json
 import os
 import logging
+import logging
 
 class JDownloadManager():
     """
@@ -18,10 +19,11 @@ class JDownloadManager():
         device_name: The device name defined in JDownloader on the client
     """
 
-    def __init__(self, username: str, password: str, device_name: str):
+    def __init__(self, username: str, password: str, device_name: str, logger: logging.Logger):
         self.username = username
         self.password = password
         self.device_name = device_name
+        self.logger = logger
         self._initialize_session()
 
     """
@@ -35,6 +37,11 @@ class JDownloadManager():
         # Check to see if we are connected, if not try to reconnect, and at worse connect from the start.
         # Documentation on the add_links function is sketchy, so if it works it should return a dictionary.
         self._restart_session()
+
+        # If the device isn't set return {} and try to download it on the next cycle.
+        if self.device == None:
+            return {}
+        
         result = self.device.linkgrabber.add_links([{"autostart": True, "links": '\n'.join(urls), "destinationFolder": path + "", "overwritePackagizerRules": True}])
 
         # Got a boolean result once so to prevent any incorrect returns I will return {}.
@@ -64,8 +71,7 @@ class JDownloadManager():
             pass
 
         self.jd.connect(self.username, self.password)
-        self.jd.update_devices()
-        self.device = self.jd.get_device(self.device_name)
+        self._safe_set_device()
 
     """
     Starts a session with JDownloader. Called on construction of this class
@@ -74,11 +80,20 @@ class JDownloadManager():
         jd = Myjdapi()
         jd.set_app_key("DLAPI")
         jd.connect(self.username, self.password)
-        jd.update_devices()
-        device = jd.get_device(self.device_name)
         self.jd = jd
-        self.device = device
-        return jd, device
+        self._safe_set_device()
+        return jd, self.device
+
+    """
+    Get the JD device but catch and set it to None. This will cause a re-attempt later on.
+    """
+    def _safe_set_device(self):
+        self.jd.update_devices()
+        try:
+            self.device =  self.jd.get_device(self.device_name)
+        except MYJDException:
+            self.logger.warn('Device %s was not found. Will try again but double check the device name.' % self.device_name)
+            self.device = None
 
 # Class to handle the management of user sessions with the application.
 class SessionManager():
