@@ -1,3 +1,8 @@
 __pycache__
 DLAPI_KEYS_START.txt
 .vscode
+DLAPI.egg-info
+run.bat
+test.bat
+devenviro.bat
+test_state/

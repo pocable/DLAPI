@@ -12,7 +12,14 @@ provided to make it easier, otherwise do the following steps:
 * Run: make build
 * Run: make run
 
-### Environment File
+## Development Setup
+This is only if you want to run it locally without docker.
+* Run pip install -r requirements.txt
+* Run pip install -e .
+* Modify ENVIRONMENT.bat to declare your environment variables
+* Run the bat file depending on if you want to run the application or test it
+
+## Environment File
 ```
 JD_USER= JDownloader Username
 JD_PASS= JDownloader Password
@@ -113,7 +120,7 @@ Check if a token is still valid on the server side.
 returns
 
 {
-    'isvalid': boolean if its valid.
+    'is_valid': boolean if its valid.
 }
 ```
 
@@ -124,3 +131,4 @@ returns
 | 400        | Error in the input. See the content message for which one. |
 | 401        | Authentication failed. Check your DLAPI key.               |
 | 410        | The ID provided does not exist/is not watched.             |
+| 417        | Response issue from Real Debrid. Check message for info.   |

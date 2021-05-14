@@ -3,8 +3,7 @@ FROM python:3
 LABEL author='thomas@pocable.ca'
 
 # Add project files to the docker container
-ADD DLAPI.py /
-ADD utilclasses.py /
+ADD dlapi /dlapi
 ADD requirements.txt /
 ADD start_webserver.sh /
 
