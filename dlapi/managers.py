@@ -8,7 +8,6 @@ import requests
 import json
 import os
 import logging
-import logging
 
 class JDownloadManager():
     """
