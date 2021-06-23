@@ -1,8 +1,7 @@
 import unittest
-from dlapi.managers import RDManager, JDownloadManager
-from dlapi.utilclasses import EventDictionary
+from dlapi.managers import RDManager, JDownloadManager, StateManager
 import logging
-import json, os
+import os
 
 class TestRDManager(unittest.TestCase):
     """
@@ -40,18 +39,15 @@ class TestRDManager(unittest.TestCase):
 
     # Test the rd listener
     def test_rd_listener(self):
+        cd = StateManager('test_state/test.db')
+        cd.clear()
         
-        # Useless callback
-        def callback(x, y, z):
-            pass
-
-        ed = EventDictionary(callback)
-        ed[os.environ['TEST_RD_ID']] = 'test'
+        cd.add_content(os.environ['TEST_RD_ID'], 'test')
 
         # Run listener to check and find file
-        res = self.rmanager.rd_listener(ed)
+        res = self.rmanager.rd_listener(cd)
         self.assertTrue(res)
 
         # Check and see if we are no longer watching the movie
-        self.assertEqual(ed, {})
+        self.assertEqual(cd.get_all(), [])
         

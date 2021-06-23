@@ -143,45 +143,48 @@ class TestAPI(unittest.TestCase):
     def test_delete_content(self):
         with app.test_client() as c:
             state_manager.clear()
-            state_manager['test'] = '123'
-            state_manager['test2'] = '456'
+            state_manager.add_content('test', '123')
+            state_manager.add_content('test2', '456')
 
             # Test delete one
             response = c.delete('/api/v1/content', json={'id': 'test'}, headers={'Authorization': os.environ['API_KEY']})
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(state_manager, {'test2': '456'})
+
+            self.assertEqual(len(state_manager), 1)
+            self.assertEqual(state_manager.get_info('test2'), ['', '456'])
 
             # Test delete all
-            state_manager['test3'] = '789'
-            state_manager['test4'] = '789'
+            state_manager.add_content('test3', '789')
+            state_manager.add_content('test4', '789')
             response = c.delete('/api/v1/content/all', headers={'Authorization': os.environ['API_KEY']})
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(state_manager, {})
+            self.assertEqual(len(state_manager), 0)
 
     # Test grabbing all content from the server
     # GET /api/v1/content/all
     def test_content_getting(self):
         with app.test_client() as c:
+           
             state_manager.clear()
-            state_manager['test'] = '123'
-            state_manager['test2'] = '456'
+            state_manager.add_content('test', '123')
+            state_manager.add_content('test2', '456')
             
             response = c.get('/api/v1/content/all', headers={'Authorization': os.environ['API_KEY']})
             data = response.get_json()
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(state_manager, data)
+            self.assertEqual(state_manager.get_all_as_dict(), data)
 
-            del state_manager['test']
+            state_manager.delete_id('test')
             response = c.get('/api/v1/content/all', headers={'Authorization': os.environ['API_KEY']})
             data = response.get_json()
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(state_manager, data)
+            self.assertEqual(state_manager.get_all_as_dict(), data)
 
-            del state_manager['test2']
+            state_manager.delete_id('test2')
             response = c.get('/api/v1/content/all', headers={'Authorization': os.environ['API_KEY']})
             data = response.get_json()
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(state_manager, data)
+            self.assertEqual(state_manager.get_all_as_dict(), data)
 
     # Test posting content to be managed by rdmanager to the server
     # POST /api/v1/content
@@ -196,12 +199,13 @@ class TestAPI(unittest.TestCase):
             # If I dont do this there is a very small chance rd_listener can execute which
             # would cause the JDownloadManager to trigger a download and remove it from the system which would
             # fail this test case.
-            key = list(state_manager.keys())[0]
-            value = state_manager[key]
+            data = state_manager.get_all()
             state_manager.clear()
+            _, path, title = data[0]
 
             # Test that our values are properly in the system. Cannot test for key as it is the RD ID and changes
-            self.assertEqual(value, {'title': 'Test Magnet File', 'path': '/test'})
+            self.assertEqual(path, '/test')
+            self.assertEqual(title, 'Test Magnet File')
             
             
 
