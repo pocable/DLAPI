@@ -20,6 +20,7 @@ class TestRDManager(unittest.TestCase):
         self.rmanager = RDManager(os.environ['RD_KEY'], logging.getLogger(), self.jmanager)
     
     # Test sending a link to rd and getting download urls at once.
+    @unittest.skipIf('TEST_MAGNET' not in os.environ, "TEST_MAGNET not defined in environment.")
     def test_get_rd_download_urls(self):
         res = self.rmanager.send_to_rd("http://google.ca/")
         self.assertEqual(res[0], False)
@@ -27,17 +28,20 @@ class TestRDManager(unittest.TestCase):
         self.assertEqual(res[0], True)
 
     # Test grabbing the download urls from a provided RDID. Note that this may fail as ID's change
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_get_download_urls_might_fail(self):
         self.assertEqual(self.rmanager.get_rd_download_urls("1"), [])
         self.assertNotEqual(self.rmanager.get_rd_download_urls(os.environ['TEST_RD_ID']), [])
 
     # Test downloading a provided ID from RD. Note that this may fail as the ID's change
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_download_id_might_fail(self):
         result = self.rmanager.download_id(os.environ['TEST_RD_ID'], "test")
         self.assertEqual(list(result.keys()), ['id'])
         self.assertIsNotNone(result['id'])
 
     # Test the rd listener
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_rd_listener(self):
         cd = StateManager('test_state/test.db')
         cd.clear()

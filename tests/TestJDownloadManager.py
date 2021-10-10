@@ -22,12 +22,14 @@ class TestJDownloadManager(unittest.TestCase):
         self.assertEqual(os.environ['JD_DEVICE'], self.mngr.get_device().name)
 
     # Test that the manager download works.
+    @unittest.skipIf('TEST_RD_LINK_ONE' not in os.environ, "TEST_RD_LINK_ONE not defined in environment.")
     def test_download(self):
         result = self.mngr.download([os.environ['TEST_RD_LINK_ONE']], 'test')
         self.assertEqual(list(result.keys()), ['id'])
 
     # Test to see if when we call download after its disconnection it will work as intended.
     # When it works, it only returns the id as a result key. Quick check.
+    @unittest.skipIf('TEST_RD_LINK_TWO' not in os.environ, "TEST_RD_LINK_TWO not defined in environment.")
     def test_disconnection_reconnect_jd(self):
         self.mngr.get_jd().disconnect()
         result = self.mngr.download([os.environ['TEST_RD_LINK_TWO']], 'test')

@@ -188,6 +188,7 @@ class TestAPI(unittest.TestCase):
 
     # Test posting content to be managed by rdmanager to the server
     # POST /api/v1/content
+    @unittest.skipIf('TEST_MAGNET' not in os.environ, "TEST_MAGNET not defined in environment.")
     def test_posting_magnet(self):
         with app.test_client() as c:
             state_manager.clear()
