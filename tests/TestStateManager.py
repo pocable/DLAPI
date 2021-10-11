@@ -9,15 +9,15 @@ class TestStateManager(unittest.TestCase):
     """
 
     def setUp(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
 
     def test_connection(self):
-        StateManager('test_state/test.db')
+        StateManager("test.db")
 
 
     def test_get_empty(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.clear()
         val = db.get_all()
         self.assertEqual(val, [])
@@ -29,13 +29,13 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(val, {})
 
     def test_add_content_duplicate(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.add_content('8958h32', '32032h823', 'Test Title')
         db.add_content('8958h32', '32032h823', 'Test Title')
         db.add_content('8958h32', '32032h823', 'Test Title')
 
     def test_add_content(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.add_content('8958h32', '32032h823', 'Test Title')
         db.add_content('t2g2g', '24g2g23w')
 
@@ -48,7 +48,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(path, '24g2g23w')
 
     def test_get_all_ids_and_delete_all(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
         db.add_content('25235', 'i325')
         db.add_content('25255', '325')
@@ -62,7 +62,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(ids, [])
 
     def test_delete_one(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
         db.add_content('25235', 'i325')
         db.add_content('25255', '325')
@@ -73,7 +73,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(ids, ['25255', '25435'])
 
     def test_length(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
         self.assertEqual(len(db), 0)
 
@@ -89,7 +89,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(len(db), 0)
 
     def test_get_all(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
 
         db.add_content('25235', 'i325')
@@ -100,7 +100,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(data, [['25235', 'i325', ''], ['25255', '325', ''], ['25435', '25', '']])
 
     def test_get_info(self):
-        db = StateManager('test_state/test.db')
+        db = StateManager("test.db")
         db.delete_all()
 
         db.add_content('25235', 'i325')
@@ -112,4 +112,4 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(inf, ['', '25'])
 
     def tearDown(self):
-        os.remove('test_state/test.db')
+        os.remove("test.db")
