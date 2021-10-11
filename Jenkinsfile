@@ -35,6 +35,26 @@ pipeline {
         '''
       }
     }
+
+    stage('build') {
+      steps {
+        sh 'docker build -t pocable/dlapi .'
+      }
+    }
+    
+    stage('deploy') {
+      steps {
+        script {
+          if(env.BRANCH_NAME == 'master'){
+            sh 'docker push pocable/dlapi:latest'
+          } else if(env.BRANCH_NAME == 'beta'){
+            sh 'docker push pocable/dlapi:edge'
+          } else {
+            echo 'Branch is not master/beta. Skipping deploy.'
+          }
+        }
+      }
+    }
   }
 
   post {
