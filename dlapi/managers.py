@@ -267,7 +267,6 @@ class StateManager():
     """
     def __init__(self, db_file: str):
         self.db_file = db_file
-
         with sqlite3.connect(db_file) as _con:
             _cur = _con.cursor()
 
