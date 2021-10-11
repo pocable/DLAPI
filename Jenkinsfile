@@ -13,6 +13,7 @@ pipeline {
     JD_PASS = credentials('JDownloaderPass')
     JACKETT_URL = credentials('JackettURL')
     JACKETT_API_KEY = credentials('JackettAPIKey')
+    DOCKERHUB_CREDENTIALS = credentials('dockerhub-login-pocable')
 
   }
 
@@ -38,7 +39,21 @@ pipeline {
 
     stage('build') {
       steps {
-        sh 'docker build -t pocable/dlapi .'
+        script {
+          if(env.BRANCH_NAME == 'master'){
+            sh 'docker build -t pocable/dlapi:latest .'
+          } else if(env.BRANCH_NAME == 'beta'){
+            sh 'docker build -t pocable/dlapi:edge .'
+          } else {
+            sh 'docker build -t pocable/dlapi .'
+          }
+        }
+      }
+    }
+
+    stage('login') {
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
       }
     }
     
@@ -59,6 +74,7 @@ pipeline {
 
   post {
     always {
+      sh 'docker logout'
       junit '**/nosetests.xml'
     }
   }
