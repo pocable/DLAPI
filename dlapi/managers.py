@@ -8,6 +8,7 @@ import requests
 import json
 import os
 import logging
+import sqlite3
 
 class JDownloadManager():
     """
@@ -18,10 +19,15 @@ class JDownloadManager():
         device_name: The device name defined in JDownloader on the client
     """
 
-    def __init__(self, username: str, password: str, device_name: str, logger: logging.Logger):
+    def __init__(self, username: str, password: str, device_name: str, logger: logging.Logger = None):
         self.username = username
         self.password = password
         self.device_name = device_name
+
+        # Use default logger if none is provided.
+        if logger == None:
+            logger = logging.getLogger()
+
         self.logger = logger
         self._initialize_session()
 
@@ -126,25 +132,24 @@ class SessionManager():
 
     """
     Check for expired sessions and remove them from the session list
-    NOTE: This function can be slow with a massive load of people.
-    In reality though there shouldn't be 50+ connections per houseold IP.
     """
     def remove_expired_sessions(self):
         current_time = date.today()
-        for ip in self.ip_sessions:
-
+        keys = list(self.ip_sessions.keys())
+        for i in range(0, len(self.ip_sessions)):
+            ip = keys[i]
+            
             # For each session in the ip, validate its time.
             for session in self.ip_sessions[ip]:
                 if session.get_expiry() < current_time:
                     self.ip_sessions[ip].remove(session)
-        
-        keys = list(self.ip_sessions.keys())
-        for i in range(0, len(self.ip_sessions)):
 
             # If there are no remaining sessions at the ip, remove it.
-            if len(self.ip_sessions[keys[i]]) == 0:
-                del self.ip_sessions[keys[i]]
+            if len(self.ip_sessions[ip]) == 0:
+                del self.ip_sessions[ip]
                 i -= 1
+                continue
+
 
     """
     Authenticate a user given their ip and the token they provided
@@ -214,6 +219,173 @@ class SessionManager():
                     return func(*args, **kwargs)
             return {'Error' : 'Authentication Failed'}, 401
         return wrapper_validate
+
+
+class FileStateManager(EventDictionary):
+    """
+    Manager for controlling the internal state file saved when needed.
+
+    Attributes:
+        config_path: The path where the file is saved at for the state.
+    """
+
+    def __init__(self, config_path: str):
+        super().__init__(self._callback)
+        self.config_path = config_path
+
+    """
+    Internal callback to save the state everytime we are updated.
+    """
+    def _callback(self, e: str, v: str, d: DictionaryEventType):
+        self.save_state()
+
+    """
+    Save our state to the file.
+    """
+    def save_state(self):
+        f = open(self.config_path, 'w')
+        f.write(json.dumps(self))
+        f.close()
+
+    """
+    Load state from the file on the path.
+    """
+    def load_state(self):
+        f = open(self.config_path, 'r')
+        self.update(json.loads(f.read()))
+        f.close()
+
+class StateManager():
+    """
+    StateManager using sqlite3 database in order to maintain watched content.
+    Due to JSON not having a tuple definition, all tuples returned from sqlite are
+    converted into a list.
+
+    Attributes:
+        _con: Connection to the database
+        _cur: Database cursor
+    """
+    def __init__(self, db_file: str):
+        self.db_file = db_file
+        with sqlite3.connect(db_file) as _con:
+            _cur = _con.cursor()
+
+            # Create the table if it does not exist.
+            _cur.execute('''
+            CREATE TABLE IF NOT EXISTS content (
+                "id"	TEXT NOT NULL UNIQUE,
+                "path"	TEXT NOT NULL,
+                "title"	TEXT,
+                PRIMARY KEY("id")
+            )''')
+            _con.commit()
+
+
+    """
+    Internal decorator to open a connection to the database.
+    All actions are commited and the conneciton is closed after every call.
+    Note: Without copy and pasting, I thought this was the best solution.
+    If there is a better one, please open an issue and let me know.
+    """
+    def with_connection(func):
+        @functools.wraps(func)
+        def wrapper_decorator(*args, **kwargs):
+            self = args[0]
+            with sqlite3.connect(self.db_file) as _con:
+                _cur = _con.cursor()
+                val = func(*args, **kwargs, _con=_con, _cur=_cur)
+                _con.commit()
+                return val
+        return wrapper_decorator
+
+
+    """
+    Deletes all data from the state system.
+    """
+    @with_connection
+    def delete_all(self, _con=None, _cur=None) -> None:
+        _cur.execute("DELETE FROM content")
+
+    """
+    Rename for backwards compatability with event dictionary.
+    Technically this should be depricated.
+    """
+    def clear(self) -> None:
+        self.delete_all()
+
+    """
+    Removes an id from the state system.
+    """
+    @with_connection
+    def delete_id(self, id: str, _con=None, _cur=None) -> None:
+        _cur.execute("DELETE FROM content WHERE id = ?", (id,))
+
+    """
+    Gets the title and path given the id.
+    Returns:
+        List of (title, path)
+    """
+    @with_connection
+    def get_info(self, id: str, _con=None, _cur=None) -> list:
+        _cur.execute("SELECT title, path FROM content WHERE id = ?", (id,))
+        result = _cur.fetchone()
+        if result == None:
+            return ()
+
+        return list(result)
+
+    """
+    Gets everything from the database.
+    Returns:
+        A list of lists in the form (id, path, title). Eg. [(id, path, title), (id, path, title)].
+    """
+    @with_connection
+    def get_all(self, _con=None, _cur=None) -> list:
+        _cur.execute("SELECT * FROM content")
+        return [list(x) for x in _cur.fetchall()]
+
+    """
+    Get everything from the database as a dictionary of id: path title
+    Returns:
+        A dictionary in the format {ID: {title: "", path: ""}}
+    """
+    @with_connection
+    def get_all_as_dict(self, _con=None, _cur=None) -> dict:
+        _cur.execute("SELECT * FROM content")
+        result = _cur.fetchall()
+        if result == None or len(result) == 0:
+            return {}
+        return { x[0]: {'title': x[2], 'path': x[1]} for x in result}
+
+    """
+    Get all ids in the system.
+    Returns:
+        A list of ids.
+    """
+    @with_connection
+    def get_all_ids(self, _con=None, _cur=None) -> list:
+        _cur.execute("SELECT id FROM content")
+        return [x[0] for x in _cur.fetchall()]
+
+    """
+    Add content to the state. Title is optional and only for reporting.
+    """
+    @with_connection
+    def add_content(self, id: str, path: str, title: str = None, _con=None, _cur=None) -> None:
+        try:
+            _cur.execute("INSERT INTO content (id, path, title) VALUES (?, ?, ?)", (id, path, '' if title == None else title))
+        except sqlite3.IntegrityError:
+            # Duplicate, since its logged we will keep the order one.
+            pass
+
+    """
+    Returns the number of items inside the state manager.
+    """
+    def __len__(self) -> int:
+        with sqlite3.connect(self.db_file) as _con:
+            _cur = _con.cursor()
+            _cur.execute("SELECT COUNT(*) FROM content")
+            return int(_cur.fetchone()[0])
 
 class RDManager():
     """
@@ -286,10 +458,10 @@ class RDManager():
 
         return self.jdownloader.download(download_urls, path)
 
-    def _download_id_and_remove_if_success(self, id: str, path: str, eventdict: EventDictionary) -> dict:
+    def _download_id_and_remove_if_success(self, id: str, path: str, state_manager: StateManager) -> dict:
         self.download_id(id, path)
-        if id in eventdict.keys():
-            del eventdict[id]
+        if id in state_manager.get_all_ids():
+            state_manager.delete_id(id)
           
     """
     Select all files for the given id when it has waiting_file_selection
@@ -301,10 +473,10 @@ class RDManager():
     """
     Function to check with real debrid to see file status and react accordingly
     """
-    def rd_listener(self, watched_content: EventDictionary) -> bool:
+    def rd_listener(self, state_manager: StateManager) -> bool:
         
         # If there is nothing to watch, why poll RD?
-        if len(watched_content) == 0:
+        if len(state_manager) == 0:
             return True
 
         # Try to get RD torrents list
@@ -322,84 +494,73 @@ class RDManager():
 
         res = json.loads(req.text)
         seen_ids = {}
+
+        watched_ids = state_manager.get_all_ids()
         
         # For each of the different torrent files we obtained
         for file in res:
 
             # If the file is being watched, check status
-            if file['id'] in watched_content:
+            if file['id'] in watched_ids:
                 seen_ids[file['id']] = True
+
+                info = state_manager.get_info(file['id'])
+
+                # If there is no info, then the id isn't in the database.
+                # Remove it from the state manager as some how its reporting with an id.
+                if info == ():
+                    state_manager.delete_id(file['id'])
+                    continue
+
+                path = info[1]
 
                 # If its downloaded and ready, process and remove for next cycle. 
                 # Otherwise if error log and remove.
                 if file['status'] == 'downloaded':
-                    self._download_id_and_remove_if_success(file['id'], watched_content[file['id']]['path'], watched_content)
+                    self._download_id_and_remove_if_success(file['id'], path, state_manager)
                 elif file['status'] == 'magnet_error':
                     self._logger.error("Magnet error on torrent with id: %s, path: %s" 
-                        % (file['id'], watched_content[file['id']]))
-                    del watched_content[file['id']]
+                        % (file['id'], path))
+                    state_manager.delete_id(file['id'])
                     continue
                 elif file['status'] == 'virus':
                     self._logger.error("Virus detected on torrent with id: %s, path: %s" 
-                        % (file['id'], watched_content[file['id']]))
-                    del watched_content[file['id']]
+                        % (file['id'], path))
+                    state_manager.delete_id(file['id'])
                     continue
                 elif file['status'] == 'error':
                     self._logger.error("Generic error on torrent with id: %s, path: %s" 
-                        % (file['id'], watched_content[file['id']]))
-                    del watched_content[file['id']]
+                        % (file['id'], path))
+                    state_manager.delete_id(file['id'])
                     continue
                 elif file['status'] == 'dead':
                     self._logger.error("Dead torrent with id: %s, path: %s" 
-                        % (file['id'], watched_content[file['id']]))
-                    del watched_content[file['id']]
+                        % (file['id'], path))
+                    state_manager.delete_id(file['id'])
                     continue
                 elif file['status'] == 'waiting_files_selection':
                     self._select_files_for_torrent(file['id'])
-                    del watched_content[file['id']]
+                    state_manager.delete_id(file['id'])
                     continue
         
         # Remove all ids that were not included in the torrents check.
         # I believe this only happens when the torrent is deleted from real-debrid.
-        for id in list(watched_content.keys()):
+        watched_ids = state_manager.get_all_ids()
+
+        for id in watched_ids:
             if id not in seen_ids:
+                
+                # Same check as above, make sure there is info
+                info = state_manager.get_info(id)
+                if info == ():
+                    state_manager.delete_id(id)
+                    self._logger.warning("Torrent failed to be checked with RD (deleted from torrents?) id: %s" 
+                        % (id))
+                    continue
+
+                path = info[1]
                 self._logger.warning("Torrent failed to be checked with RD (deleted from torrents?) id: %s, path: %s" 
-                    % (id, watched_content[id]))
-                del watched_content[id]
+                    % (id, path))
+                state_manager.delete_id(id)
 
         return True
-
-
-class StateManager(EventDictionary):
-    """
-    Manager for controlling the internal state file saved when needed.
-
-    Attributes:
-        config_path: The path where the file is saved at for the state.
-    """
-
-    def __init__(self, config_path: str):
-        super().__init__(self._callback)
-        self.config_path = config_path
-
-    """
-    Internal callback to save the state everytime we are updated.
-    """
-    def _callback(self, e: str, v: str, d: DictionaryEventType):
-        self.save_state()
-
-    """
-    Save our state to the file.
-    """
-    def save_state(self):
-        f = open(self.config_path, 'w')
-        f.write(json.dumps(self))
-        f.close()
-
-    """
-    Load state from the file on the path.
-    """
-    def load_state(self):
-        f = open(self.config_path, 'r')
-        self.update(json.loads(f.read()))
-        f.close()

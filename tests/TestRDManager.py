@@ -1,8 +1,7 @@
 import unittest
-from dlapi.managers import RDManager, JDownloadManager
-from dlapi.utilclasses import EventDictionary
+from dlapi.managers import RDManager, JDownloadManager, StateManager
 import logging
-import json, os
+import os
 
 class TestRDManager(unittest.TestCase):
     """
@@ -21,6 +20,7 @@ class TestRDManager(unittest.TestCase):
         self.rmanager = RDManager(os.environ['RD_KEY'], logging.getLogger(), self.jmanager)
     
     # Test sending a link to rd and getting download urls at once.
+    @unittest.skipIf('TEST_MAGNET' not in os.environ, "TEST_MAGNET not defined in environment.")
     def test_get_rd_download_urls(self):
         res = self.rmanager.send_to_rd("http://google.ca/")
         self.assertEqual(res[0], False)
@@ -28,30 +28,30 @@ class TestRDManager(unittest.TestCase):
         self.assertEqual(res[0], True)
 
     # Test grabbing the download urls from a provided RDID. Note that this may fail as ID's change
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_get_download_urls_might_fail(self):
         self.assertEqual(self.rmanager.get_rd_download_urls("1"), [])
         self.assertNotEqual(self.rmanager.get_rd_download_urls(os.environ['TEST_RD_ID']), [])
 
     # Test downloading a provided ID from RD. Note that this may fail as the ID's change
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_download_id_might_fail(self):
         result = self.rmanager.download_id(os.environ['TEST_RD_ID'], "test")
         self.assertEqual(list(result.keys()), ['id'])
         self.assertIsNotNone(result['id'])
 
     # Test the rd listener
+    @unittest.skipIf('TEST_RD_ID' not in os.environ, "TEST_RD_ID not defined in environment.")
     def test_rd_listener(self):
+        cd = StateManager('test_state/test.db')
+        cd.clear()
         
-        # Useless callback
-        def callback(x, y, z):
-            pass
-
-        ed = EventDictionary(callback)
-        ed[os.environ['TEST_RD_ID']] = 'test'
+        cd.add_content(os.environ['TEST_RD_ID'], 'test')
 
         # Run listener to check and find file
-        res = self.rmanager.rd_listener(ed)
+        res = self.rmanager.rd_listener(cd)
         self.assertTrue(res)
 
         # Check and see if we are no longer watching the movie
-        self.assertEqual(ed, {})
+        self.assertEqual(cd.get_all(), [])
         

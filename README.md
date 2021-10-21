@@ -57,6 +57,25 @@ Adds the torrent magnet to the monitored list, when the magnet link is done down
     'path': Download path on server.
 }
 ```
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 400        | Error in the input. See the content message for which one. |
+| 401        | Authentication failed. Check your DLAPI key.               |
+| 417        | RealDebrid error, See the content message for details.     |
+
+Success Returns
+```
+{}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
 
 ### DELETE - /api/v1/content
 Removes an ID to the monitored list.
@@ -66,15 +85,98 @@ Removes an ID to the monitored list.
     'id': Real Debrid ID, can be obtained from GET - /api/v1/content/all
 }
 ```
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 400        | Error in the input. See the content message for which one. |
+| 401        | Authentication failed. Check your DLAPI key.               |
+| 410        | ID was not being watched so nothing has changed.           |
+
+Success Returns
+```
+{}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
 
 ### GET - /api/v1/content/check
 Immedietly check RD to see if content has finished downloading.
 
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 401        | Authentication failed. Check your DLAPI key.               |
+
+Success Returns
+```
+{}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
+
 ### GET - /api/v1/content/all
 Get a list of all monitored Real Debrid ID's and their download path.
 
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 401        | Authentication failed. Check your DLAPI key.               |
+
+Success Returns (Example)
+```
+{
+    "EXAMPLE1ID": {
+        "path": "/media/movies/",
+        "title": "Movie Title"
+    },
+    "EXAMPLE2ID": {
+        "path": "/media/tv/",
+        "title": "Title 2"
+    }
+}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
+
 ### DELETE - /api/v1/content/all
 Delete all ID's being watched by the system.
+
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 401        | Authentication failed. Check your DLAPI key.               |
+
+Success Returns
+```
+{}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
+
 
 ### GET - /api/v1/corsproxy
 Simple CORS proxy to GET a given url. Disabled when it is not configured in the environment.
@@ -96,17 +198,35 @@ query=[The item to seach for on jackett.]
 categories=[Jackett categories. '&categories=' + categories. Example: "2045,2050,2060"]
 ```
 
+This proxy will return the exact status code and text from the source
+
 ### POST - /api/v1/authenticate
 Authenticate a given user password in order to recieve a token. This module is optional but allows for cookie saving in JDRD.
 ```
 {
     'userpass': The userpassword set earlier.
 }
+```
 
-returns 
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 400        | Error in the input. See the content message for which one. |
+| 401        | Authentication failed. Check your DLAPI key.               |
+| 410        | Sessioning is disabled. This call is not needed.           |
 
+Success Returns
+```
 {
     'token': The returned session token.
+}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
 }
 ```
 
@@ -116,19 +236,53 @@ Check if a token is still valid on the server side.
 {
     'token': The user token.
 }
+```
 
-returns
+Returns
+| HTTP Codes | Description                                                |
+|------------|------------------------------------------------------------|
+| 200        | Success                                                    |
+| 400        | Error in the input. See the content message for which one. |
+| 410        | Sessioning is disabled. This call is not needed.           |
 
+Success Returns
+```
 {
     'is_valid': boolean if its valid.
 }
 ```
 
-## HTTP Codes
+Error Returns
+```
+{
+    'Error' : 'message'
+}
+```
+
+### POST - /api/v1/authenticate/closesession
+Close the user session with the provided token.
+```
+{
+    'token': The user token.
+}
+```
+
+Returns
 | HTTP Codes | Description                                                |
 |------------|------------------------------------------------------------|
 | 200        | Success                                                    |
 | 400        | Error in the input. See the content message for which one. |
-| 401        | Authentication failed. Check your DLAPI key.               |
-| 410        | The ID provided does not exist/is not watched.             |
-| 417        | Response issue from Real Debrid. Check message for info.   |
+| 410        | Sessioning is disabled. This call is not needed.           |
+
+Success Returns
+```
+{
+    'is_valid': boolean if its valid.
+}
+```
+
+Error Returns
+```
+{
+    'Error' : 'message'
+}

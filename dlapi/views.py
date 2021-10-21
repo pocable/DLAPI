@@ -56,12 +56,7 @@ def add_content():
     if id[0] == False:
         return {'Error': id[1]}, 417
 
-    package = {'path':path}
-    if title != None:
-        package['title'] = title
-
-    
-    state_manager[id[1]] = package
+    state_manager.add_content(id[1], path, title)
     return {}, 200
 
 # Endpoint for deleting content from being watched
@@ -78,8 +73,8 @@ def remove_content():
         return content, 400
 
     # If we have the id, delete it.
-    if id in state_manager.keys():
-        del state_manager[id]
+    if id in state_manager.get_all_ids():
+        state_manager.delete_id(id)
         return {}, 200
     else:
         return {'Error' : 'ID is not in the watched list.'}, 410
@@ -88,13 +83,13 @@ def remove_content():
 @app.route('/api/v1/content/all', methods=['GET'])
 @session_manager.requires_authentication
 def get_content():
-    return jsonify(state_manager)
+    return jsonify(state_manager.get_all_as_dict())
 
 # Endpoint to get all watched content on RD
 @app.route('/api/v1/content/all', methods=['DELETE'])
 @session_manager.requires_authentication
 def delete_all_content():
-    state_manager.clear()
+    state_manager.delete_all()
     return {}, 200
 
 # Endpoint to immedietly check for downloads (calls rd_listener)
